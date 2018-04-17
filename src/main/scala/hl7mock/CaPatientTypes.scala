@@ -17,7 +17,8 @@ case class CaPatientIdType (
 case class CaPatientNameComponents(
   Academic: String = "",
   FirstName: String = "",
-  GivenNameInitials: String = "",
+  GivenName: String = "",
+  Initials: String = "",
   LastName: String = "",
   LastNameFromSpouse: String = "",
   LastNamePrefix: String = "",

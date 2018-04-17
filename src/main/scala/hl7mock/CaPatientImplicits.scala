@@ -2,14 +2,11 @@ package org.hl7mock
 
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
-
 import com.datastax.driver.core.{TypeCodec, UDTValue}
 import com.google.common.reflect.TypeToken
-
 import com.eztier.cassandra.CaCommon.camelToUnderscores
 import com.eztier.cassandra._
-
-import org.hl7mock.types.{CaPatientAddress, CaPatientIdType, CaPatientNameComponents, CaPatientPhoneInfo}
+import org.hl7mock.types._
 
 // Define object that extends CassandraCustomCodecImplicits.  This will implicitly be imported.
 object CaPatientImplicits extends CaCustomCodecImplicits {
@@ -21,6 +18,10 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
       case a if a == typeOf[CaPatientIdType] => CaPatientIdTypeCodec(innerCodec)
       case a if a == typeOf[CaPatientNameComponents] => CaPatientNameComponentsCodec(innerCodec)
       case a if a == typeOf[CaPatientAddress] => CaPatientAddressCodec(innerCodec)
+      case a if a == typeOf[CaPatientCareTeamMember]=> CaPatientCareTeamMemberCodec(innerCodec)
+      case a if a == typeOf[CaPatientEmergencyContact]=> CaPatientEmergencyContactCodec(innerCodec)
+      case a if a == typeOf[CaPatientEmploymentInformation]=> CaPatientEmploymentInformationCodec(innerCodec)
+
       case _ => CaDefaultUdtCodec(innerCodec)
     }
   }
@@ -65,7 +66,8 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
       else CaPatientNameComponents(
         Academic = value.getString(camelToUnderscores("Academic")),
         FirstName = value.getString(camelToUnderscores("FirstName")),
-        GivenNameInitials = value.getString(camelToUnderscores("GivenNameInitials")),
+        GivenName = value.getString(camelToUnderscores("GivenName")),
+        Initials = value.getString(camelToUnderscores("Initials")),
         LastName = value.getString(camelToUnderscores("LastName")),
         LastNameFromSpouse = value.getString(camelToUnderscores("LastNameFromSpouse")),
         LastNamePrefix = value.getString(camelToUnderscores("LastNamePrefix")),
@@ -83,7 +85,8 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
       else userType.newValue
         .setString(camelToUnderscores("Academic"), value.Academic)
         .setString(camelToUnderscores("FirstName"), value.FirstName)
-        .setString(camelToUnderscores("GivenNameInitials"), value.GivenNameInitials)
+        .setString(camelToUnderscores("GivenName"), value.GivenName)
+        .setString(camelToUnderscores("Initials"), value.Initials)
         .setString(camelToUnderscores("LastName"), value.LastName)
         .setString(camelToUnderscores("LastNameFromSpouse"), value.LastNameFromSpouse)
         .setString(camelToUnderscores("LastNamePrefix"), value.LastNamePrefix)
@@ -130,5 +133,70 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
         .setString(camelToUnderscores("State"), value.State)
         .setList(camelToUnderscores("Street"), value.Email.asJava)
         .setString(camelToUnderscores("Type"), value.Type)
+  }
+
+  // CaPatientCareTeamMember
+  case class CaPatientCareTeamMemberCodec(innerCodec: TypeCodec[UDTValue])
+    extends TypeCodec[CaPatientCareTeamMember](innerCodec.getCqlType, TypeToken.of(classOf[CaPatientCareTeamMember]))
+      with CaCodec[CaPatientCareTeamMember] {
+
+    override def toCaClass(value: UDTValue) =
+      if (value == null) null
+      else CaPatientCareTeamMember(
+        Ids = value.getList(camelToUnderscores("Ids"), TypeToken.of(classOf[CaPatientIdType])).asScala,
+        Name = value.getString(camelToUnderscores("Name")),
+        Type = value.getString(camelToUnderscores("Type"))
+      )
+
+    override def toUDTValue(value: CaPatientCareTeamMember): UDTValue =
+      if (value == null) null
+      else userType.newValue
+        .setList(camelToUnderscores("Ids"), value.Ids.asJava)
+        .setString(camelToUnderscores("Name"), value.Name)
+        .setString(camelToUnderscores("Type"), value.Type)
+  }
+
+  // CaPatientEmergencyContact
+  case class CaPatientEmergencyContactCodec(innerCodec: TypeCodec[UDTValue])
+    extends TypeCodec[CaPatientEmergencyContact](innerCodec.getCqlType, TypeToken.of(classOf[CaPatientEmergencyContact]))
+      with CaCodec[CaPatientEmergencyContact] {
+
+    override def toCaClass(value: UDTValue) =
+      if (value == null) null
+      else CaPatientEmergencyContact(
+        LegalGuardian = value.getString(camelToUnderscores("LegalGuardian")),
+        Name = value.getString(camelToUnderscores("Name")),
+        PhoneNumbers = value.getList(camelToUnderscores("PhoneNumbers"), TypeToken.of(classOf[CaPatientPhoneInfo])).asScala,
+        Relation = value.getString(camelToUnderscores("Relation"))
+      )
+
+    override def toUDTValue(value: CaPatientEmergencyContact): UDTValue =
+      if (value == null) null
+      else userType.newValue
+        .setString(camelToUnderscores("LegalGuardian"), value.LegalGuardian)
+        .setString(camelToUnderscores("Name"), value.Name)
+        .setList(camelToUnderscores("PhoneNumbers"), value.PhoneNumbers.asJava)
+        .setString(camelToUnderscores("Relation"), value.Relation)
+  }
+
+  // CaPatientEmploymentInformation
+  case class CaPatientEmploymentInformationCodec(innerCodec: TypeCodec[UDTValue])
+    extends TypeCodec[CaPatientEmploymentInformation](innerCodec.getCqlType, TypeToken.of(classOf[CaPatientEmploymentInformation]))
+      with CaCodec[CaPatientEmploymentInformation] {
+
+    override def toCaClass(value: UDTValue) =
+      if (value == null) null
+      else CaPatientEmploymentInformation(
+        EmployerName = value.getString(camelToUnderscores("EmployerName")),
+        Occupation = value.getString(camelToUnderscores("Occupation")),
+        PhoneNumbers = value.getList(camelToUnderscores("PhoneNumbers"), TypeToken.of(classOf[CaPatientPhoneInfo])).asScala
+      )
+
+    override def toUDTValue(value: CaPatientEmploymentInformation): UDTValue =
+      if (value == null) null
+      else userType.newValue
+        .setString(camelToUnderscores("EmployerName"), value.EmployerName)
+        .setString(camelToUnderscores("Occupation"), value.Occupation)
+        .setList(camelToUnderscores("PhoneNumbers"), value.PhoneNumbers.asJava)
   }
 }

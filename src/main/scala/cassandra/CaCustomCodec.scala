@@ -1,10 +1,13 @@
 package com.eztier.cassandra
 
 import java.nio.ByteBuffer
-import scala.reflect.runtime.universe._
 
+import scala.concurrent.{Future, Promise, Await}
+import scala.reflect.runtime.universe._
 import com.datastax.driver.core._
 import com.google.common.reflect.TypeToken
+import com.google.common.util.concurrent.FutureCallback
+import com.google.common.util.concurrent.Futures
 
 import com.eztier.cassandra.CaCommon.camelToUnderscores
 
@@ -81,32 +84,62 @@ case class CaDefaultUdtCodec(innerCodec: TypeCodec[UDTValue])
 
 object CaCustomCodec {
 
-  case class CaCustomCodecProvider(endpoint: String, keySpace: String, user: String, pass: String) {
-    implicit val session = Cluster.builder
-      .addContactPoint(endpoint)
-      .withPort(9042)
-      .withCredentials(user, pass)
-      .build
-      .connect()
-    private val cluster = session.getCluster
-    private val registry = cluster.getConfiguration.getCodecRegistry
 
-    def register[T <: CaUdt]()(implicit typeTag: TypeTag[T], userImplicits: CaCustomCodecImplicits) = {
-      val udtName = camelToUnderscores(typeTag.tpe.typeSymbol.name.toString)
+}
 
-      // Retrieve the meta
-      val aType: UserType = cluster.getMetadata().getKeyspace(keySpace).getUserType(udtName)
-      val aTypeCodec: TypeCodec[UDTValue] = cluster.getConfiguration.getCodecRegistry.codecFor(aType)
+case class CaCustomCodecProvider(endpoint: String, keySpace: String, user: String, pass: String) {
+  implicit val session = Cluster.builder
+    .addContactPoint(endpoint)
+    .withPort(9042)
+    .withCredentials(user, pass)
+    .build
+    .connect()
 
-      // Associate the codec, defined by user code within scope.
-      import userImplicits._
+  private val cluster = session.getCluster
+  private val registry = cluster.getConfiguration.getCodecRegistry
 
-      val codec: CaCodec[_] = implicitly(aTypeCodec)
-      val uCodec = codec.asInstanceOf[TypeCodec[_]]
-
-      // Register
-      cluster.getConfiguration.getCodecRegistry.register(uCodec)
-      this
-    }
+  implicit def resultSetFutureToScala(f: ResultSetFuture): Future[ResultSet] = {
+    val p = Promise[ResultSet]()
+    Futures.addCallback(f,
+      new FutureCallback[ResultSet] {
+        def onSuccess(r: ResultSet) = p success r
+        def onFailure(t: Throwable) = p failure t
+      })
+    p.future
   }
+
+  def register[T <: CaUdt]()(implicit typeTag: TypeTag[T], userImplicits: CaCustomCodecImplicits) = {
+    val udtName = camelToUnderscores(typeTag.tpe.typeSymbol.name.toString)
+
+    // Retrieve the meta
+    val aType: UserType = cluster.getMetadata().getKeyspace(keySpace).getUserType(udtName)
+    val aTypeCodec: TypeCodec[UDTValue] = cluster.getConfiguration.getCodecRegistry.codecFor(aType)
+
+    // Associate the codec, defined by user code within scope.
+    import userImplicits._
+
+    val codec: CaCodec[_] = implicitly(aTypeCodec)
+    val uCodec = codec.asInstanceOf[TypeCodec[_]]
+
+    // Register
+    cluster.getConfiguration.getCodecRegistry.register(uCodec)
+    this
+  }
+
+  def persist(bs: BoundStatement) = {
+    import scala.concurrent.duration._
+
+    val rs: Future[ResultSet] = session.executeAsync(bs)
+
+    Await.result(rs, Duration.Inf)
+  }
+
+  def read(ss: Statement) = {
+    import scala.concurrent.duration._
+
+    val rs: Future[ResultSet] = session.executeAsync(ss)
+
+    Await.result(rs, Duration.Inf)
+  }
+
 }
