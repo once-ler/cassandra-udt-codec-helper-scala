@@ -2,11 +2,11 @@ package org.hl7mock
 
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
-import com.datastax.driver.core.{TypeCodec, UDTValue}
+import com.datastax.driver.core.{PreparedStatement, TypeCodec, UDTValue}
 import com.google.common.reflect.TypeToken
 import com.eztier.cassandra.CaCommon.camelToUnderscores
 import com.eztier.cassandra._
-import org.hl7mock.types._
+import org.hl7mock.types.{CaPatient, _}
 
 // Define object that extends CassandraCustomCodecImplicits.  This will implicitly be imported.
 object CaPatientImplicits extends CaCustomCodecImplicits {
@@ -26,7 +26,35 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
     }
   }
 
-  // Extend TypeCodec and define custom encode/decode formats below.
+  // BoundStatement binder for alpakka.
+  val statementBinder =
+    (el: CaPatient, stmt: PreparedStatement) =>
+      stmt.bind(
+        el.Addresses.asJava,
+        el.Aliases.asJava,
+        el.CareTeam.asJava,
+        el.ConfidentialName,
+        el.CreateDate,
+        el.DateOfBirth,
+        el.EmergencyContacts.asJava,
+        el.EmploymentInformation,
+        el.EthnicGroup,
+        el.HistoricalIds.asJava,
+        el.HomeDeployment,
+        el.Id,
+        el.Ids.asJava,
+        el.MaritalStatus,
+        el.Mrn,
+        el.Name,
+        el.NameComponents,
+        el.NationalIdentifier,
+        el.Race.asJava,
+        el.Rank,
+        el.Sex,
+        el.Status
+      )
+
+  // Extend TypeCodec and define custom encode/decode formats below:
 
   // CaPatientPhoneInfo
   case class CaPatientPhoneInfoCodec(innerCodec: TypeCodec[UDTValue])

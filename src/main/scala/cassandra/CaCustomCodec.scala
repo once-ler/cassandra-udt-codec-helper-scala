@@ -2,14 +2,15 @@ package com.eztier.cassandra
 
 import java.nio.ByteBuffer
 
-import scala.concurrent.{Future, Promise, Await}
+import scala.collection.JavaConverters._
+import scala.concurrent.{Await, Future, Promise}
 import scala.reflect.runtime.universe._
 import com.datastax.driver.core._
 import com.google.common.reflect.TypeToken
 import com.google.common.util.concurrent.FutureCallback
 import com.google.common.util.concurrent.Futures
-
-import com.eztier.cassandra.CaCommon.camelToUnderscores
+import com.eztier.cassandra.CaCommon.{camelToUnderscores, getFieldNames}
+import org.hl7mock.types.CaPatient
 
 
 /*
@@ -82,12 +83,7 @@ case class CaDefaultUdtCodec(innerCodec: TypeCodec[UDTValue])
   extends TypeCodec[UDTValue](innerCodec.getCqlType, TypeToken.of(classOf[UDTValue]))
     with CaCodec[UDTValue]
 
-object CaCustomCodec {
-
-
-}
-
-case class CaCustomCodecProvider(endpoint: String, keySpace: String, user: String, pass: String) {
+case class CaCustomCodecProvider(endpoint: String, keySpace: String, user: String, pass: String) extends CaStreamFlowTask {
   implicit val session = Cluster.builder
     .addContactPoint(endpoint)
     .withPort(9042)
@@ -140,6 +136,16 @@ case class CaCustomCodecProvider(endpoint: String, keySpace: String, user: Strin
     val rs: Future[ResultSet] = session.executeAsync(ss)
 
     Await.result(rs, Duration.Inf)
+  }
+
+  // Use with caution, will be in lexicon order!
+  def toInsertPreparedStatement[T <: CaTbl](el: T) = {
+    val fieldNames = getFieldNames(el)
+    val fields = fieldNames.map{camelToUnderscores(_)}.mkString(",")
+    val placeholder = (1 to fieldNames.length).map(a => "?").mkString(",")
+
+    val stmt = s"""insert into ${keySpace}.${camelToUnderscores(el.getClass.getSimpleName)} ($fields) values($placeholder)"""
+    session.prepare(stmt)
   }
 
 }

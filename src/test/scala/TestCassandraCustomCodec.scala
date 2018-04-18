@@ -9,6 +9,10 @@ import com.datastax.driver.core._
 import org.scalatest.{Matchers, fixture}
 import com.eztier.cassandra.CaCustomCodecProvider
 import com.eztier.cassandra.CaCommon.{camelToUnderscores, getFieldNames}
+import com.google.common.reflect.TypeToken
+import epic.patient
+import epic.patient.{EmploymentInformation, NameComponents}
+import org.h2.expression.Alias
 import org.hl7mock.CaPatientImplicits
 import org.hl7mock.types._
 
@@ -33,6 +37,8 @@ class TestCassandraCustomSpec extends fixture.FunSpec with Matchers with fixture
           // User defined implicits.
           implicit val userImplicits = CaPatientImplicits
 
+          import userImplicits._
+
           val provider = CaCustomCodecProvider("127.0.0.1", "keyspace", "cassandra", "abracadabra")
 
           provider.register[CaPatientPhoneInfo]
@@ -45,42 +51,13 @@ class TestCassandraCustomSpec extends fixture.FunSpec with Matchers with fixture
 
           println("Registered")
 
-          val statementBinder = (el: CaPatient, statement: PreparedStatement) => {
-
-            statement.bind(
-              el.Addresses.asJava,
-              el.Aliases.asJava,
-              el.CareTeam.asJava,
-              el.ConfidentialName,
-              el.CreateDate,
-              el.DateOfBirth,
-              el.EmergencyContacts.asJava,
-              el.EmploymentInformation,
-              el.EthnicGroup,
-              el.HistoricalIds.asJava,
-              el.HomeDeployment,
-              el.Id,
-              el.Ids.asJava,
-              el.MaritalStatus,
-              el.Mrn,
-              el.Name,
-              el.NameComponents,
-              el.NationalIdentifier,
-              el.Race.asJava,
-              el.Rank,
-              el.Sex,
-              el.Status
-            )
-
-          }
-
           val el = CaPatient(Id = "12345678")
-          val fields = getFieldNames(el).map{camelToUnderscores(_)}.mkString(",")
-          val placeholder = getFieldNames(el).map{a => "?"}.mkString(",")
 
-          val stmt = s"""insert into dwh.${camelToUnderscores(el.getClass.getSimpleName)} ($fields) values($placeholder)"""
+          // Provided by provider.
+          val preparedStatement = provider.toInsertPreparedStatement(el)
 
-          val boundStatement = statementBinder(el, provider.session.prepare(stmt))
+          // statementBinder provided by user.
+          val boundStatement = statementBinder(el, preparedStatement)
 
           val r = provider.persist(boundStatement)
 
@@ -90,13 +67,40 @@ class TestCassandraCustomSpec extends fixture.FunSpec with Matchers with fixture
 
           val rs = provider.read(stmt1)
 
-          val row = rs.one()
+          val row: Row = rs.one()
 
           val addresses = row.getList("addresses", classOf[CaPatientAddress])
 
           val id = row.getString("id")
 
           val dt = row.getTimestamp("create_date")
+
+          // val aliases = if (row.isNull(camelToUnderscores("Aliases"))) Seq() else row.getList(camelToUnderscores("Aliases"), classOf[String]).asScala
+
+          val patient = CaPatient(
+            Addresses = row.getList(camelToUnderscores("Addresses"), classOf[CaPatientAddress]).asScala,
+            Aliases = row.getList(camelToUnderscores("Aliases"), classOf[String]).asScala,
+            CareTeam = row.getList(camelToUnderscores("CareTeam"), classOf[CaPatientCareTeamMember]).asScala,
+            ConfidentialName = row.getString(camelToUnderscores("ConfidentialName")),
+            CreateDate = row.getTimestamp(camelToUnderscores("CreateDate")),
+            DateOfBirth = row.getString(camelToUnderscores("DateOfBirth")),
+            EmergencyContacts = row.getList(camelToUnderscores("EmergencyContacts"), classOf[CaPatientEmergencyContact]).asScala,
+            EmploymentInformation = row.get(camelToUnderscores("EmploymentInformation"), classOf[CaPatientEmploymentInformation]),
+            EthnicGroup = row.getString(camelToUnderscores("EthnicGroup")),
+            HistoricalIds = row.getList(camelToUnderscores("HistoricalIds"), classOf[CaPatientIdType]).asScala,
+            HomeDeployment = row.getString(camelToUnderscores("HomeDeployment")),
+            Id = row.getString(camelToUnderscores("Id")),
+            Ids = row.getList(camelToUnderscores("Ids"), classOf[CaPatientIdType]).asScala,
+            MaritalStatus = row.getString(camelToUnderscores("MaritalStatus")),
+            Mrn = row.getString(camelToUnderscores("Mrn")),
+            Name = row.getString(camelToUnderscores("Name")),
+            NameComponents = row.get(camelToUnderscores("NameComponents"), classOf[CaPatientNameComponents]),
+            NationalIdentifier = row.getString(camelToUnderscores("NationalIdentifier")),
+            Race = row.getList(camelToUnderscores("Race"), classOf[String]).asScala,
+            Rank = row.getString(camelToUnderscores("Rank")),
+            Sex = row.getString(camelToUnderscores("Sex")),
+            Status = row.getString(camelToUnderscores("Status"))
+          )
 
           println("Simple read")
 
