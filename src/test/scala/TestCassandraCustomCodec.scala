@@ -74,13 +74,15 @@ class TestCassandraCustomSpec extends fixture.FunSpec with Matchers with fixture
 
           }
 
-          val el = CaPatient()
+          val el = CaPatient(Id = "12345678")
           val fields = getFieldNames(el).map{camelToUnderscores(_)}.mkString(",")
           val placeholder = getFieldNames(el).map{a => "?"}.mkString(",")
 
           val stmt = s"""insert into dwh.${camelToUnderscores(el.getClass.getSimpleName)} ($fields) values($placeholder)"""
 
           val boundStatement = statementBinder(el, provider.session.prepare(stmt))
+
+          val r = provider.persist(boundStatement)
 
           println("Binder")
 
@@ -93,6 +95,8 @@ class TestCassandraCustomSpec extends fixture.FunSpec with Matchers with fixture
           val addresses = row.getList("addresses", classOf[CaPatientAddress])
 
           val id = row.getString("id")
+
+          val dt = row.getTimestamp("create_date")
 
           println("Simple read")
 
