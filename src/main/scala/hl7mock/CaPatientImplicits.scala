@@ -1,10 +1,12 @@
 package org.hl7mock
 
+import com.datastax.driver.core.querybuilder.{Insert, QueryBuilder}
+
 import scala.collection.JavaConverters._
 import scala.reflect.runtime.universe._
-import com.datastax.driver.core.{PreparedStatement, TypeCodec, UDTValue}
+import com.datastax.driver.core._
 import com.google.common.reflect.TypeToken
-import com.eztier.cassandra.CaCommon.camelToUnderscores
+import com.eztier.cassandra.CaCommon.{camelToUnderscores, getFieldNames}
 import com.eztier.cassandra._
 import org.hl7mock.types.{CaPatient, _}
 
@@ -26,8 +28,77 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
     }
   }
 
+  val insertStatement = (keySpace: String, el: CaPatient) => {
+    val t = camelToUnderscores(el.getClass.getSimpleName)
+    val insert = QueryBuilder.insertInto(keySpace, t)
+
+    insertValues(insert) values(
+      camelToUnderscores("Addresses") -> el.Addresses.asJava,
+      camelToUnderscores("Aliases") -> el.Aliases.asJava,
+      camelToUnderscores("CareTeam") -> el.CareTeam.asJava,
+      camelToUnderscores("ConfidentialName") -> el.ConfidentialName,
+      camelToUnderscores("CreateDate") -> el.CreateDate,
+      camelToUnderscores("DateOfBirth") -> el.DateOfBirth,
+      camelToUnderscores("EmergencyContacts") -> el.EmergencyContacts.asJava,
+      camelToUnderscores("EmploymentInformation") -> el.EmploymentInformation,
+      camelToUnderscores("EthnicGroup") -> el.EthnicGroup,
+      camelToUnderscores("HistoricalIds") -> el.HistoricalIds.asJava,
+      camelToUnderscores("HomeDeployment") -> el.HomeDeployment,
+      camelToUnderscores("Id") -> el.Id,
+      camelToUnderscores("Ids") -> el.Ids.asJava,
+      camelToUnderscores("MaritalStatus") -> el.MaritalStatus,
+      camelToUnderscores("Mrn") -> el.Mrn,
+      camelToUnderscores("Name") -> el.Name,
+      camelToUnderscores("NameComponents") -> el.NameComponents,
+      camelToUnderscores("NationalIdentifier") -> el.NationalIdentifier,
+      camelToUnderscores("Race") -> el.Race.asJava,
+      camelToUnderscores("Rank") -> el.Rank,
+      camelToUnderscores("Sex") -> el.Sex,
+      camelToUnderscores("Status") -> el.Status
+    )
+  }
+
+  implicit def rowToCaPatient(row: Row) =
+    CaPatient(
+      Addresses = row.getList(camelToUnderscores("Addresses"), classOf[CaPatientAddress]).asScala,
+      Aliases = row.getList(camelToUnderscores("Aliases"), classOf[String]).asScala,
+      CareTeam = row.getList(camelToUnderscores("CareTeam"), classOf[CaPatientCareTeamMember]).asScala,
+      ConfidentialName = row.getString(camelToUnderscores("ConfidentialName")),
+      CreateDate = row.getTimestamp(camelToUnderscores("CreateDate")),
+      DateOfBirth = row.getString(camelToUnderscores("DateOfBirth")),
+      EmergencyContacts = row.getList(camelToUnderscores("EmergencyContacts"), classOf[CaPatientEmergencyContact]).asScala,
+      EmploymentInformation = row.get(camelToUnderscores("EmploymentInformation"), classOf[CaPatientEmploymentInformation]),
+      EthnicGroup = row.getString(camelToUnderscores("EthnicGroup")),
+      HistoricalIds = row.getList(camelToUnderscores("HistoricalIds"), classOf[CaPatientIdType]).asScala,
+      HomeDeployment = row.getString(camelToUnderscores("HomeDeployment")),
+      Id = row.getString(camelToUnderscores("Id")),
+      Ids = row.getList(camelToUnderscores("Ids"), classOf[CaPatientIdType]).asScala,
+      MaritalStatus = row.getString(camelToUnderscores("MaritalStatus")),
+      Mrn = row.getString(camelToUnderscores("Mrn")),
+      Name = row.getString(camelToUnderscores("Name")),
+      NameComponents = row.get(camelToUnderscores("NameComponents"), classOf[CaPatientNameComponents]),
+      NationalIdentifier = row.getString(camelToUnderscores("NationalIdentifier")),
+      Race = row.getList(camelToUnderscores("Race"), classOf[String]).asScala,
+      Rank = row.getString(camelToUnderscores("Rank")),
+      Sex = row.getString(camelToUnderscores("Sex")),
+      Status = row.getString(camelToUnderscores("Status"))
+    )
+
+  // PreparedStatement for alpakka.
+  def getPreparedStatement(keySpace: String, el: CaPatient)(implicit session: Session) = {
+      val fieldNames = getFieldNames(el)
+
+      val fields = fieldNames.map {
+        camelToUnderscores(_)
+      }.mkString(",")
+      val placeholder = (1 to fieldNames.length).map(a => "?").mkString(",")
+
+      val stmt = s"""insert into ${keySpace}.${camelToUnderscores(el.getClass.getSimpleName)} ($fields) values($placeholder)"""
+      session.prepare(stmt)
+    }
+
   // BoundStatement binder for alpakka.
-  val statementBinder =
+  val getStatementBinder =
     (el: CaPatient, stmt: PreparedStatement) =>
       stmt.bind(
         el.Addresses.asJava,

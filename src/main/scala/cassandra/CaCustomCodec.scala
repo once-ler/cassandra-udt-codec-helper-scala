@@ -2,16 +2,17 @@ package com.eztier.cassandra
 
 import java.nio.ByteBuffer
 
+import akka.stream.scaladsl.Flow
+
 import scala.collection.JavaConverters._
 import scala.concurrent.{Await, Future, Promise}
 import scala.reflect.runtime.universe._
 import com.datastax.driver.core._
+import com.datastax.driver.core.querybuilder.{Insert}
 import com.google.common.reflect.TypeToken
 import com.google.common.util.concurrent.FutureCallback
 import com.google.common.util.concurrent.Futures
 import com.eztier.cassandra.CaCommon.{camelToUnderscores, getFieldNames}
-import org.hl7mock.types.CaPatient
-
 
 /*
 // Example results.
@@ -41,6 +42,12 @@ class CaPatientPhoneInfoCodec(innerCodec: TypeCodec[UDTValue], javaType: Class[C
 
 trait CaCustomCodecImplicits {
   implicit def toCaCodec[T](innerCodec: TypeCodec[UDTValue])(implicit typeTag: TypeTag[T]): CaCodec[_]
+
+  implicit class insertValues(insert: Insert) {
+    def values(vals: (String, Any)*) = {
+      vals.foldLeft(insert)((i, v) => i.value(v._1, v._2))
+    }
+  }
 }
 
 trait CaCodec[T] {
@@ -122,21 +129,9 @@ case class CaCustomCodecProvider(endpoint: String, keySpace: String, user: Strin
     this
   }
 
-  def persist(bs: BoundStatement) = {
-    import scala.concurrent.duration._
+  def insertAsync(bs: BoundStatement): Future[ResultSet] = session.executeAsync(bs)
 
-    val rs: Future[ResultSet] = session.executeAsync(bs)
-
-    Await.result(rs, Duration.Inf)
-  }
-
-  def read(ss: Statement) = {
-    import scala.concurrent.duration._
-
-    val rs: Future[ResultSet] = session.executeAsync(ss)
-
-    Await.result(rs, Duration.Inf)
-  }
+  def readAsync(ss: Statement): Future[ResultSet] = session.executeAsync(ss)
 
   // Use with caution, will be in lexicon order!
   def toInsertPreparedStatement[T <: CaTbl](el: T) = {
@@ -146,6 +141,20 @@ case class CaCustomCodecProvider(endpoint: String, keySpace: String, user: Strin
 
     val stmt = s"""insert into ${keySpace}.${camelToUnderscores(el.getClass.getSimpleName)} ($fields) values($placeholder)"""
     session.prepare(stmt)
+  }
+
+  def insertAsync(insert: Insert): Future[ResultSet] = {
+    val stmt = new SimpleStatement(insert.toString)
+    session.executeAsync(stmt)
+  }
+
+  def getInsertFlow() = {
+    Flow[Insert].mapAsync(parallelism = 20) {
+      insert =>
+        val stmt = new SimpleStatement(insert.toString)
+        val rs: Future[ResultSet] = session.executeAsync(stmt)
+        rs
+    }
   }
 
 }

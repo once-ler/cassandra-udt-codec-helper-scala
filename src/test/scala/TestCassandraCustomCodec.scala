@@ -5,7 +5,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 
 import scala.collection.JavaConverters._
-import com.datastax.driver.core._
+import com.datastax.driver.core.{Duration, _}
 import org.scalatest.{Matchers, fixture}
 import com.eztier.cassandra.CaCustomCodecProvider
 import com.eztier.cassandra.CaCommon.{camelToUnderscores, getFieldNames}
@@ -16,7 +16,7 @@ import org.h2.expression.Alias
 import org.hl7mock.CaPatientImplicits
 import org.hl7mock.types._
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 class TestCassandraCustomSpec extends fixture.FunSpec with Matchers with fixture.ConfigMapFixture {
 
@@ -53,19 +53,29 @@ class TestCassandraCustomSpec extends fixture.FunSpec with Matchers with fixture
 
           val el = CaPatient(Id = "12345678")
 
-          // Provided by provider.
-          val preparedStatement = provider.toInsertPreparedStatement(el)
+          // preparedStatement provided by user.
+          implicit val session = provider.session
+          val preparedStatement = getPreparedStatement("dwh", el)
 
           // statementBinder provided by user.
-          val boundStatement = statementBinder(el, preparedStatement)
+          val boundStatement = getStatementBinder(el, preparedStatement)
 
-          val r = provider.persist(boundStatement)
+          import scala.concurrent.duration.Duration
+          val fut0 = provider.insertAsync(boundStatement)
+          val res = Await.result(fut0, Duration.Inf)
 
           println("Binder")
 
+          val insertQuery = insertStatement("dwh", el)
+          val qs = insertQuery.getQueryString()
+          val stmt0 = new SimpleStatement(insertQuery.toString)
+
+          println("Insert Statement")
+
           val stmt1 = new SimpleStatement(s"select * from dwh.${camelToUnderscores(el.getClass.getSimpleName)}").setFetchSize(20)
 
-          val rs = provider.read(stmt1)
+          val fut = provider.readAsync(stmt1)
+          val rs = Await.result(fut, Duration.Inf)
 
           val row: Row = rs.one()
 
@@ -75,32 +85,7 @@ class TestCassandraCustomSpec extends fixture.FunSpec with Matchers with fixture
 
           val dt = row.getTimestamp("create_date")
 
-          // val aliases = if (row.isNull(camelToUnderscores("Aliases"))) Seq() else row.getList(camelToUnderscores("Aliases"), classOf[String]).asScala
-
-          val patient = CaPatient(
-            Addresses = row.getList(camelToUnderscores("Addresses"), classOf[CaPatientAddress]).asScala,
-            Aliases = row.getList(camelToUnderscores("Aliases"), classOf[String]).asScala,
-            CareTeam = row.getList(camelToUnderscores("CareTeam"), classOf[CaPatientCareTeamMember]).asScala,
-            ConfidentialName = row.getString(camelToUnderscores("ConfidentialName")),
-            CreateDate = row.getTimestamp(camelToUnderscores("CreateDate")),
-            DateOfBirth = row.getString(camelToUnderscores("DateOfBirth")),
-            EmergencyContacts = row.getList(camelToUnderscores("EmergencyContacts"), classOf[CaPatientEmergencyContact]).asScala,
-            EmploymentInformation = row.get(camelToUnderscores("EmploymentInformation"), classOf[CaPatientEmploymentInformation]),
-            EthnicGroup = row.getString(camelToUnderscores("EthnicGroup")),
-            HistoricalIds = row.getList(camelToUnderscores("HistoricalIds"), classOf[CaPatientIdType]).asScala,
-            HomeDeployment = row.getString(camelToUnderscores("HomeDeployment")),
-            Id = row.getString(camelToUnderscores("Id")),
-            Ids = row.getList(camelToUnderscores("Ids"), classOf[CaPatientIdType]).asScala,
-            MaritalStatus = row.getString(camelToUnderscores("MaritalStatus")),
-            Mrn = row.getString(camelToUnderscores("Mrn")),
-            Name = row.getString(camelToUnderscores("Name")),
-            NameComponents = row.get(camelToUnderscores("NameComponents"), classOf[CaPatientNameComponents]),
-            NationalIdentifier = row.getString(camelToUnderscores("NationalIdentifier")),
-            Race = row.getList(camelToUnderscores("Race"), classOf[String]).asScala,
-            Rank = row.getString(camelToUnderscores("Rank")),
-            Sex = row.getString(camelToUnderscores("Sex")),
-            Status = row.getString(camelToUnderscores("Status"))
-          )
+          val patient: CaPatient = row
 
           println("Simple read")
 
