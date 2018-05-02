@@ -1,4 +1,4 @@
-package org.hl7mock.types
+package com.eztier.hl7mock.types
 
 import java.util.Date
 

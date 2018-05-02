@@ -1,4 +1,4 @@
-package org.hl7mock
+package com.eztier.hl7mock
 
 import com.datastax.driver.core.querybuilder.{Insert, QueryBuilder}
 
