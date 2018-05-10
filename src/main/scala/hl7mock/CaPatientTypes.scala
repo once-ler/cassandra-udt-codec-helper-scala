@@ -1,5 +1,6 @@
 package com.eztier.hl7mock.types
 
+import java.text.SimpleDateFormat
 import java.util.Date
 
 import com.eztier.cassandra.{CaTbl, CaUdt}
@@ -70,10 +71,11 @@ case class CaPatient(
   CareTeam: Seq[CaPatientCareTeamMember] = Seq(),
   ConfidentialName: String = "",
   CreateDate: Date = new Date(),
-  DateOfBirth: String = "",
+  DateOfBirth: Date = new Date(),
   EmergencyContacts: Seq[CaPatientEmergencyContact] = Seq(),
   EmploymentInformation: CaPatientEmploymentInformation = CaPatientEmploymentInformation(),
-  EthnicGroup: String = "",
+  Ethnicity: Seq[String] = Seq(),
+  Gender: String = "",
   HistoricalIds: Seq[CaPatientIdType] = Seq(),
   HomeDeployment: String = "",
   Id: String = "",
@@ -81,10 +83,26 @@ case class CaPatient(
   MaritalStatus: String = "",
   Mrn: String = "",
   Name: String = "",
-  NameComponents: CaPatientNameComponents = CaPatientNameComponents(),
+  NameComponents: Seq[CaPatientNameComponents] = Seq(),
   NationalIdentifier: String = "",
   Race: Seq[String] = Seq(),
   Rank: String = "",
-  Sex: String = "",
   Status: String = ""
+) extends CaTbl
+
+case class CaPatientControl(
+  CreateDate: Date = new Date(),
+  City: String = "",
+  DateOfBirth: Date = new Date(),
+  Email: String = "",
+  Ethnicity: String = "",
+  Gender: String = "",
+  Id: String = "",
+  Mrn: String = "",
+  Name: String = "",
+  PhoneNumber: String = "",
+  PostalCode: String = "",
+  Race: String = "",
+  StateProvince: String = "",
+  Street: String = ""
 ) extends CaTbl

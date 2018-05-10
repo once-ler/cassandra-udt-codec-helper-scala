@@ -1,6 +1,8 @@
 package com.eztier.cassandra
 
 import java.nio.ByteBuffer
+import java.text.SimpleDateFormat
+import java.util.Date
 
 import akka.stream.scaladsl.Flow
 
@@ -8,7 +10,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.{Await, Future, Promise}
 import scala.reflect.runtime.universe._
 import com.datastax.driver.core._
-import com.datastax.driver.core.querybuilder.{Insert}
+import com.datastax.driver.core.querybuilder.Insert
 import com.google.common.reflect.TypeToken
 import com.google.common.util.concurrent.FutureCallback
 import com.google.common.util.concurrent.Futures

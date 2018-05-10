@@ -1,5 +1,7 @@
 package com.eztier.hl7mock
 
+import java.util.Date
+
 import com.datastax.driver.core.querybuilder.{Insert, QueryBuilder}
 
 import scala.collection.JavaConverters._
@@ -8,7 +10,7 @@ import com.datastax.driver.core._
 import com.google.common.reflect.TypeToken
 import com.eztier.cassandra.CaCommon.{camelToUnderscores, getFieldNames}
 import com.eztier.cassandra._
-import org.hl7mock.types.{CaPatient, _}
+import com.eztier.hl7mock.types.{CaPatient, _}
 
 // Define object that extends CassandraCustomCodecImplicits.  This will implicitly be imported.
 object CaPatientImplicits extends CaCustomCodecImplicits {
@@ -28,34 +30,55 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
     }
   }
 
-  val insertStatement = (keySpace: String, el: CaPatient) => {
-    val t = camelToUnderscores(el.getClass.getSimpleName)
+  def insertStatement[T](keySpace: String, in: T)(implicit typeTag: TypeTag[T]) = {
+    val t = camelToUnderscores(in.getClass.getSimpleName)
     val insert = QueryBuilder.insertInto(keySpace, t)
 
-    insertValues(insert) values(
-      camelToUnderscores("Addresses") -> el.Addresses.asJava,
-      camelToUnderscores("Aliases") -> el.Aliases.asJava,
-      camelToUnderscores("CareTeam") -> el.CareTeam.asJava,
-      camelToUnderscores("ConfidentialName") -> el.ConfidentialName,
-      camelToUnderscores("CreateDate") -> el.CreateDate,
-      camelToUnderscores("DateOfBirth") -> el.DateOfBirth,
-      camelToUnderscores("EmergencyContacts") -> el.EmergencyContacts.asJava,
-      camelToUnderscores("EmploymentInformation") -> el.EmploymentInformation,
-      camelToUnderscores("EthnicGroup") -> el.EthnicGroup,
-      camelToUnderscores("HistoricalIds") -> el.HistoricalIds.asJava,
-      camelToUnderscores("HomeDeployment") -> el.HomeDeployment,
-      camelToUnderscores("Id") -> el.Id,
-      camelToUnderscores("Ids") -> el.Ids.asJava,
-      camelToUnderscores("MaritalStatus") -> el.MaritalStatus,
-      camelToUnderscores("Mrn") -> el.Mrn,
-      camelToUnderscores("Name") -> el.Name,
-      camelToUnderscores("NameComponents") -> el.NameComponents,
-      camelToUnderscores("NationalIdentifier") -> el.NationalIdentifier,
-      camelToUnderscores("Race") -> el.Race.asJava,
-      camelToUnderscores("Rank") -> el.Rank,
-      camelToUnderscores("Sex") -> el.Sex,
-      camelToUnderscores("Status") -> el.Status
-    )
+    in match {
+      case el: CaPatient =>
+        insertValues(insert) values(
+          camelToUnderscores("Addresses") -> el.Addresses.asJava,
+          camelToUnderscores("Aliases") -> el.Aliases.asJava,
+          camelToUnderscores("CareTeam") -> el.CareTeam.asJava,
+          camelToUnderscores("ConfidentialName") -> el.ConfidentialName,
+          camelToUnderscores("CreateDate") -> el.CreateDate,
+          camelToUnderscores("DateOfBirth") -> el.DateOfBirth,
+          camelToUnderscores("EmergencyContacts") -> el.EmergencyContacts.asJava,
+          camelToUnderscores("EmploymentInformation") -> el.EmploymentInformation,
+          camelToUnderscores("Ethnicity") -> el.Ethnicity,
+          camelToUnderscores("HistoricalIds") -> el.HistoricalIds.asJava,
+          camelToUnderscores("HomeDeployment") -> el.HomeDeployment,
+          camelToUnderscores("Id") -> el.Id,
+          camelToUnderscores("Ids") -> el.Ids.asJava,
+          camelToUnderscores("MaritalStatus") -> el.MaritalStatus,
+          camelToUnderscores("Mrn") -> el.Mrn,
+          camelToUnderscores("Name") -> el.Name,
+          camelToUnderscores("NameComponents") -> el.NameComponents,
+          camelToUnderscores("NationalIdentifier") -> el.NationalIdentifier,
+          camelToUnderscores("Race") -> el.Race.asJava,
+          camelToUnderscores("Rank") -> el.Rank,
+          camelToUnderscores("Gender") -> el.Gender,
+          camelToUnderscores("Status") -> el.Status
+        )
+      case el: CaPatientControl =>
+        insertValues(insert) values(
+          camelToUnderscores("CreateDate") -> el.CreateDate,
+          camelToUnderscores("City") -> el.City,
+          camelToUnderscores("DateOfBirth") -> el.DateOfBirth,
+          camelToUnderscores("Email") -> el.Email,
+          camelToUnderscores("Ethnicity") -> el.Ethnicity,
+          camelToUnderscores("Gender") -> el.Gender,
+          camelToUnderscores("Id") -> el.Id,
+          camelToUnderscores("Mrn") -> el.Mrn,
+          camelToUnderscores("Name") -> el.Name,
+          camelToUnderscores("PhoneNumber") -> el.PhoneNumber,
+          camelToUnderscores("PostalCode") -> el.PostalCode,
+          camelToUnderscores("Race") -> el.Race,
+          camelToUnderscores("StateProvince") -> el.StateProvince,
+          camelToUnderscores("Street") -> el.Street,
+        )
+      case _ => insertValues(insert) values()
+    }
   }
 
   implicit def rowToCaPatient(row: Row) =
@@ -65,10 +88,10 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
       CareTeam = row.getList(camelToUnderscores("CareTeam"), classOf[CaPatientCareTeamMember]).asScala,
       ConfidentialName = row.getString(camelToUnderscores("ConfidentialName")),
       CreateDate = row.getTimestamp(camelToUnderscores("CreateDate")),
-      DateOfBirth = row.getString(camelToUnderscores("DateOfBirth")),
+      DateOfBirth = row.getTimestamp(camelToUnderscores("DateOfBirth")),
       EmergencyContacts = row.getList(camelToUnderscores("EmergencyContacts"), classOf[CaPatientEmergencyContact]).asScala,
       EmploymentInformation = row.get(camelToUnderscores("EmploymentInformation"), classOf[CaPatientEmploymentInformation]),
-      EthnicGroup = row.getString(camelToUnderscores("EthnicGroup")),
+      Ethnicity = row.getList(camelToUnderscores("Ethnicity"), classOf[String]).asScala,
       HistoricalIds = row.getList(camelToUnderscores("HistoricalIds"), classOf[CaPatientIdType]).asScala,
       HomeDeployment = row.getString(camelToUnderscores("HomeDeployment")),
       Id = row.getString(camelToUnderscores("Id")),
@@ -76,13 +99,52 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
       MaritalStatus = row.getString(camelToUnderscores("MaritalStatus")),
       Mrn = row.getString(camelToUnderscores("Mrn")),
       Name = row.getString(camelToUnderscores("Name")),
-      NameComponents = row.get(camelToUnderscores("NameComponents"), classOf[CaPatientNameComponents]),
+      NameComponents = row.getList(camelToUnderscores("NameComponents"), classOf[CaPatientNameComponents]).asScala,
       NationalIdentifier = row.getString(camelToUnderscores("NationalIdentifier")),
       Race = row.getList(camelToUnderscores("Race"), classOf[String]).asScala,
       Rank = row.getString(camelToUnderscores("Rank")),
-      Sex = row.getString(camelToUnderscores("Sex")),
+      Gender = row.getString(camelToUnderscores("Gender")),
       Status = row.getString(camelToUnderscores("Status"))
     )
+
+  implicit def rowToCaPatientControl(row: Row) =
+    CaPatientControl(
+      CreateDate = row.getTimestamp(camelToUnderscores("CreateDate")),
+      City = row.getString(camelToUnderscores("City")),
+      DateOfBirth = row.getTimestamp(camelToUnderscores("DateOfBirth")),
+      Email = row.getString(camelToUnderscores("Email")),
+      Ethnicity = row.getString(camelToUnderscores("Ethnicity")),
+      Gender = row.getString(camelToUnderscores("Gender")),
+      Id = row.getString(camelToUnderscores("Id")),
+      Mrn = row.getString(camelToUnderscores("Mrn")),
+      Name = row.getString(camelToUnderscores("Name")),
+      PhoneNumber = row.getString(camelToUnderscores("PhoneNumber")),
+      PostalCode = row.getString(camelToUnderscores("PostalCode")),
+      Race = row.getString(camelToUnderscores("Race")),
+      StateProvince = row.getString(camelToUnderscores("StateProvince")),
+      Street = row.getString(camelToUnderscores("Street"))
+    )
+
+  implicit def fromCaPatientToCaPatientControl(in: CaPatient): CaPatientControl = {
+    val address = in.Addresses.headOption.getOrElse(CaPatientAddress())
+
+    CaPatientControl(
+      CreateDate = in.CreateDate,
+      City = address.City,
+      DateOfBirth = in.DateOfBirth,
+      Email = address.Email.mkString(","),
+      Ethnicity = in.Ethnicity.mkString(","),
+      Gender = in.Gender,
+      Id = in.Id,
+      Mrn = in.Mrn,
+      Name = in.Name,
+      PhoneNumber = address.PhoneNumbers.map(a => a.Number).mkString(","),
+      PostalCode = address.PostalCode,
+      Race = in.Race.mkString(","),
+      StateProvince = address.State,
+      Street = address.Street.mkString(",")
+    )
+  }
 
   // PreparedStatement for alpakka.
   def getPreparedStatement(keySpace: String, el: CaPatient)(implicit session: Session) = {
@@ -109,7 +171,7 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
         el.DateOfBirth,
         el.EmergencyContacts.asJava,
         el.EmploymentInformation,
-        el.EthnicGroup,
+        el.Ethnicity,
         el.HistoricalIds.asJava,
         el.HomeDeployment,
         el.Id,
@@ -121,7 +183,7 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
         el.NationalIdentifier,
         el.Race.asJava,
         el.Rank,
-        el.Sex,
+        el.Gender,
         el.Status
       )
 
