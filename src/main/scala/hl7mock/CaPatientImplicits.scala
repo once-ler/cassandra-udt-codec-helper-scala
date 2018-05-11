@@ -30,6 +30,7 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
     }
   }
 
+  // Caution: if field is a Seq, one must convert the type to a Java List or conversion will fail silently.  (ie, _.asJava)
   def insertStatement[T](keySpace: String, in: T)(implicit typeTag: TypeTag[T]) = {
     val t = camelToUnderscores(in.getClass.getSimpleName)
     val insert = QueryBuilder.insertInto(keySpace, t)
@@ -45,7 +46,7 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
           camelToUnderscores("DateOfBirth") -> el.DateOfBirth,
           camelToUnderscores("EmergencyContacts") -> el.EmergencyContacts.asJava,
           camelToUnderscores("EmploymentInformation") -> el.EmploymentInformation,
-          camelToUnderscores("Ethnicity") -> el.Ethnicity,
+          camelToUnderscores("Ethnicity") -> el.Ethnicity.asJava,
           camelToUnderscores("HistoricalIds") -> el.HistoricalIds.asJava,
           camelToUnderscores("HomeDeployment") -> el.HomeDeployment,
           camelToUnderscores("Id") -> el.Id,
@@ -53,7 +54,7 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
           camelToUnderscores("MaritalStatus") -> el.MaritalStatus,
           camelToUnderscores("Mrn") -> el.Mrn,
           camelToUnderscores("Name") -> el.Name,
-          camelToUnderscores("NameComponents") -> el.NameComponents,
+          camelToUnderscores("NameComponents") -> el.NameComponents.asJava,
           camelToUnderscores("NationalIdentifier") -> el.NationalIdentifier,
           camelToUnderscores("Race") -> el.Race.asJava,
           camelToUnderscores("Rank") -> el.Rank,

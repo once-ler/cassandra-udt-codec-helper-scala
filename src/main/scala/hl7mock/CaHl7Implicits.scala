@@ -1,9 +1,9 @@
 package com.eztier.hl7mock
 
 import com.datastax.driver.core.querybuilder.QueryBuilder
-import com.datastax.driver.core.{TypeCodec, UDTValue}
-import scala.reflect.runtime.universe._
+import com.datastax.driver.core.{Row, TypeCodec, UDTValue}
 
+import scala.reflect.runtime.universe._
 import com.eztier.cassandra.CaCommon.camelToUnderscores
 import com.eztier.cassandra.{CaCustomCodecImplicits, CaDefaultUdtCodec}
 import com.eztier.hl7mock.types.{CaHl7, CaHl7Control}
@@ -33,4 +33,25 @@ object CaHl7Implicits extends CaCustomCodecImplicits {
       case _ => insertValues(insert) values()
     }
   }
+
+  implicit def rowToCaHl7(row: Row) = {
+    CaHl7(
+      ControlId = row.getString(camelToUnderscores("ControlId")),
+      CreateDate = row.getTimestamp(camelToUnderscores("CreateDate")),
+      Id = row.getString(camelToUnderscores("Id")),
+      Message = row.getString(camelToUnderscores("Message")),
+      MessageType = row.getString(camelToUnderscores("MessageType")),
+      Mrn = row.getString(camelToUnderscores("Mrn")),
+      SendingFacility = row.getString(camelToUnderscores("SendingFacility"))
+    )
+  }
+
+  implicit def rowToCaHl7Control(row: Row) = {
+    CaHl7Control(
+      CreateDate = row.getTimestamp(camelToUnderscores("CreateDate")),
+      Id = row.getString(camelToUnderscores("Id")),
+      MessageType = row.getString(camelToUnderscores("MessageType"))
+    )
+  }
+
 }
