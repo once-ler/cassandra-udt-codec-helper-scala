@@ -6,13 +6,15 @@ import ca.uhn.hl7v2.model.Message
 import ca.uhn.hl7v2.model.v231.datatype.{CX, XPN}
 import ca.uhn.hl7v2.model.v231.segment.PID
 import com.eztier.hl7mock.types._
-import epic.patient.NameComponents
+import com.eztier.hl7mock.HapiToCaHl7Implicits._
 
 object HapiToCaPatientImplicits {
   implicit def fromMessageToCaPatient(in: Message): CaPatient = {
+    val header: CaHl7 = in
     val pid = in.get("PID").asInstanceOf[PID]
 
     CaPatient(
+      CreateDate = header.CreateDate,
       Ethnicity = pid toEthnicGroup,
       Race = pid toRace,
       Addresses = pid toCaPatientAddress,
