@@ -31,54 +31,55 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
   }
 
   // Caution: if field is a Seq, one must convert the type to a Java List or conversion will fail silently.  (ie, _.asJava)
-  def insertStatement[T](keySpace: String, in: T)(implicit typeTag: TypeTag[T]) = {
-    val t = camelToUnderscores(in.getClass.getSimpleName)
-    val insert = QueryBuilder.insertInto(keySpace, t)
+  implicit class WrapCaPatient(el: CaPatient) extends WithInsertStatement {
+    override def getInsertStatement(keySpace: String) = {
+      val insert = el.insertQuery(keySpace)
+      insertValues(insert) values(
+        camelToUnderscores("Addresses") -> el.Addresses.asJava,
+        camelToUnderscores("Aliases") -> el.Aliases.asJava,
+        camelToUnderscores("CareTeam") -> el.CareTeam.asJava,
+        camelToUnderscores("ConfidentialName") -> el.ConfidentialName,
+        camelToUnderscores("CreateDate") -> el.CreateDate,
+        camelToUnderscores("DateOfBirth") -> el.DateOfBirth,
+        camelToUnderscores("EmergencyContacts") -> el.EmergencyContacts.asJava,
+        camelToUnderscores("EmploymentInformation") -> el.EmploymentInformation,
+        camelToUnderscores("Ethnicity") -> el.Ethnicity.asJava,
+        camelToUnderscores("HistoricalIds") -> el.HistoricalIds.asJava,
+        camelToUnderscores("HomeDeployment") -> el.HomeDeployment,
+        camelToUnderscores("Id") -> el.Id,
+        camelToUnderscores("Ids") -> el.Ids.asJava,
+        camelToUnderscores("MaritalStatus") -> el.MaritalStatus,
+        camelToUnderscores("Mrn") -> el.Mrn,
+        camelToUnderscores("Name") -> el.Name,
+        camelToUnderscores("NameComponents") -> el.NameComponents.asJava,
+        camelToUnderscores("NationalIdentifier") -> el.NationalIdentifier,
+        camelToUnderscores("Race") -> el.Race.asJava,
+        camelToUnderscores("Rank") -> el.Rank,
+        camelToUnderscores("Gender") -> el.Gender,
+        camelToUnderscores("Status") -> el.Status
+      )
+    }
+  }
 
-    in match {
-      case el: CaPatient =>
-        insertValues(insert) values(
-          camelToUnderscores("Addresses") -> el.Addresses.asJava,
-          camelToUnderscores("Aliases") -> el.Aliases.asJava,
-          camelToUnderscores("CareTeam") -> el.CareTeam.asJava,
-          camelToUnderscores("ConfidentialName") -> el.ConfidentialName,
-          camelToUnderscores("CreateDate") -> el.CreateDate,
-          camelToUnderscores("DateOfBirth") -> el.DateOfBirth,
-          camelToUnderscores("EmergencyContacts") -> el.EmergencyContacts.asJava,
-          camelToUnderscores("EmploymentInformation") -> el.EmploymentInformation,
-          camelToUnderscores("Ethnicity") -> el.Ethnicity.asJava,
-          camelToUnderscores("HistoricalIds") -> el.HistoricalIds.asJava,
-          camelToUnderscores("HomeDeployment") -> el.HomeDeployment,
-          camelToUnderscores("Id") -> el.Id,
-          camelToUnderscores("Ids") -> el.Ids.asJava,
-          camelToUnderscores("MaritalStatus") -> el.MaritalStatus,
-          camelToUnderscores("Mrn") -> el.Mrn,
-          camelToUnderscores("Name") -> el.Name,
-          camelToUnderscores("NameComponents") -> el.NameComponents.asJava,
-          camelToUnderscores("NationalIdentifier") -> el.NationalIdentifier,
-          camelToUnderscores("Race") -> el.Race.asJava,
-          camelToUnderscores("Rank") -> el.Rank,
-          camelToUnderscores("Gender") -> el.Gender,
-          camelToUnderscores("Status") -> el.Status
-        )
-      case el: CaPatientControl =>
-        insertValues(insert) values(
-          camelToUnderscores("CreateDate") -> el.CreateDate,
-          camelToUnderscores("City") -> el.City,
-          camelToUnderscores("DateOfBirth") -> el.DateOfBirth,
-          camelToUnderscores("Email") -> el.Email,
-          camelToUnderscores("Ethnicity") -> el.Ethnicity,
-          camelToUnderscores("Gender") -> el.Gender,
-          camelToUnderscores("Id") -> el.Id,
-          camelToUnderscores("Mrn") -> el.Mrn,
-          camelToUnderscores("Name") -> el.Name,
-          camelToUnderscores("PhoneNumber") -> el.PhoneNumber,
-          camelToUnderscores("PostalCode") -> el.PostalCode,
-          camelToUnderscores("Race") -> el.Race,
-          camelToUnderscores("StateProvince") -> el.StateProvince,
-          camelToUnderscores("Street") -> el.Street,
-        )
-      case _ => insertValues(insert) values()
+  implicit class WrapCaPatientControl(el: CaPatientControl) extends WithInsertStatement {
+    override def getInsertStatement(keySpace: String) = {
+      val insert = el.insertQuery(keySpace)
+      insertValues(insert) values(
+        camelToUnderscores("CreateDate") -> el.CreateDate,
+        camelToUnderscores("City") -> el.City,
+        camelToUnderscores("DateOfBirth") -> el.DateOfBirth,
+        camelToUnderscores("Email") -> el.Email,
+        camelToUnderscores("Ethnicity") -> el.Ethnicity,
+        camelToUnderscores("Gender") -> el.Gender,
+        camelToUnderscores("Id") -> el.Id,
+        camelToUnderscores("Mrn") -> el.Mrn,
+        camelToUnderscores("Name") -> el.Name,
+        camelToUnderscores("PhoneNumber") -> el.PhoneNumber,
+        camelToUnderscores("PostalCode") -> el.PostalCode,
+        camelToUnderscores("Race") -> el.Race,
+        camelToUnderscores("StateProvince") -> el.StateProvince,
+        camelToUnderscores("Street") -> el.Street,
+      )
     }
   }
 

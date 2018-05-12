@@ -10,7 +10,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.{Await, Future, Promise}
 import scala.reflect.runtime.universe._
 import com.datastax.driver.core._
-import com.datastax.driver.core.querybuilder.Insert
+import com.datastax.driver.core.querybuilder.{Insert, QueryBuilder}
 import com.google.common.reflect.TypeToken
 import com.google.common.util.concurrent.FutureCallback
 import com.google.common.util.concurrent.Futures
@@ -41,6 +41,9 @@ class CaPatientPhoneInfoCodec(innerCodec: TypeCodec[UDTValue], javaType: Class[C
     else userType.newValue.setString("number", value.Number).setString("type", value.Type)
 }
 */
+trait WithInsertStatement {
+  def getInsertStatement(keySpace: String): Insert
+}
 
 trait CaCustomCodecImplicits {
   implicit def toCaCodec[T](innerCodec: TypeCodec[UDTValue])(implicit typeTag: TypeTag[T]): CaCodec[_]
@@ -49,6 +52,10 @@ trait CaCustomCodecImplicits {
     def values(vals: (String, Any)*) = {
       vals.foldLeft(insert)((i, v) => i.value(v._1, v._2))
     }
+  }
+
+  implicit class GetQueryBuilderInsert[T](in: T) {
+    def insertQuery(keySpace: String) = QueryBuilder.insertInto(keySpace, camelToUnderscores(in.getClass.getSimpleName))
   }
 }
 
