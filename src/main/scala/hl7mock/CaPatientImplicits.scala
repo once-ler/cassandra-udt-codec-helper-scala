@@ -294,7 +294,7 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
         .setString(camelToUnderscores("HouseNumber"), value.HouseNumber)
         .setList(camelToUnderscores("PhoneNumbers"), value.PhoneNumbers.asJava).setString(camelToUnderscores("PostalCode"), value.PostalCode)
         .setString(camelToUnderscores("State"), value.State)
-        .setList(camelToUnderscores("Street"), value.Email.asJava)
+        .setList(camelToUnderscores("Street"), value.Street.asJava)
         .setString(camelToUnderscores("Type"), value.Type)
   }
 
