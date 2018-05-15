@@ -274,7 +274,7 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
         Country = value.getString(camelToUnderscores("Country")),
         County = value.getString(camelToUnderscores("County")),
         District = value.getString(camelToUnderscores("District")),
-        Email = value.getList(camelToUnderscores("Email"), TypeToken.of(classOf[String])).asScala,
+        Email = value.getList(camelToUnderscores("Email"), TypeToken.of(classOf[CaPatientEmailInfo])).asScala,
         HouseNumber = value.getString(camelToUnderscores("HouseNumber")),
         PhoneNumbers = value.getList(camelToUnderscores("PhoneNumbers"), TypeToken.of(classOf[CaPatientPhoneInfo])).asScala,
         PostalCode = value.getString(camelToUnderscores("PostalCode")),

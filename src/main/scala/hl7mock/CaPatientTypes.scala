@@ -10,6 +10,11 @@ case class CaPatientPhoneInfo (
   Type: String = ""
 ) extends CaUdt
 
+case class CaPatientEmailInfo (
+  Email: String = "",
+  Type: String = ""
+) extends CaUdt
+
 case class CaPatientIdType (
  Id: String = "",
  Type: String = ""
@@ -37,7 +42,7 @@ case class CaPatientAddress (
   Country: String = "",
   County: String = "",
   District: String = "",
-  Email: Seq[String] = Seq(),
+  Email: Seq[CaPatientEmailInfo] = Seq(),
   HouseNumber: String = "",
   PhoneNumbers: Seq[CaPatientPhoneInfo] = Seq(),
   PostalCode: String = "",
