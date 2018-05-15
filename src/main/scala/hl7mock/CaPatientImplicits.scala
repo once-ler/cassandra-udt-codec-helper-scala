@@ -19,6 +19,7 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
   override implicit def toCaCodec[T](innerCodec: TypeCodec[UDTValue])(implicit typeTag: TypeTag[T]) = {
     typeTag.tpe match {
       case a if a == typeOf[CaPatientPhoneInfo] => CaPatientPhoneInfoCodec(innerCodec)
+      case a if a == typeOf[CaPatientEmailInfo] => CaPatientEmailInfoCodec(innerCodec)
       case a if a == typeOf[CaPatientIdType] => CaPatientIdTypeCodec(innerCodec)
       case a if a == typeOf[CaPatientNameComponents] => CaPatientNameComponentsCodec(innerCodec)
       case a if a == typeOf[CaPatientAddress] => CaPatientAddressCodec(innerCodec)
@@ -134,13 +135,13 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
       CreateDate = in.CreateDate,
       City = address.City,
       DateOfBirth = in.DateOfBirth,
-      Email = address.Email.mkString(","),
+      Email = address.Email.map(a => a.Email).filter(a => a.size > 0).mkString(","),
       Ethnicity = in.Ethnicity.mkString(","),
       Gender = in.Gender,
       Id = in.Id,
       Mrn = in.Mrn,
       Name = in.Name,
-      PhoneNumber = address.PhoneNumbers.map(a => a.Number).mkString(","),
+      PhoneNumber = address.PhoneNumbers.map(a => a.Number).filter(a => a != "(null) null").mkString(","),
       PostalCode = address.PostalCode,
       Race = in.Race.mkString(","),
       StateProvince = address.State,
@@ -203,6 +204,20 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
     override def toUDTValue(value: CaPatientPhoneInfo): UDTValue =
       if (value == null) null
       else userType.newValue.setString("number", value.Number).setString("type", value.Type)
+  }
+
+  // CaPatientEmailInfo
+  case class CaPatientEmailInfoCodec(innerCodec: TypeCodec[UDTValue])
+    extends TypeCodec[CaPatientEmailInfo](innerCodec.getCqlType, TypeToken.of(classOf[CaPatientEmailInfo]))
+      with CaCodec[CaPatientEmailInfo] {
+
+    override def toCaClass(value: UDTValue) =
+      if (value == null) null
+      else CaPatientEmailInfo(Email = value.getString("email"), Type = value.getString("type"))
+
+    override def toUDTValue(value: CaPatientEmailInfo): UDTValue =
+      if (value == null) null
+      else userType.newValue.setString("email", value.Email).setString("type", value.Type)
   }
 
   // CaPatientIdType
@@ -292,7 +307,8 @@ object CaPatientImplicits extends CaCustomCodecImplicits {
         .setString(camelToUnderscores("District"), value.District)
         .setList(camelToUnderscores("Email"), value.Email.asJava)
         .setString(camelToUnderscores("HouseNumber"), value.HouseNumber)
-        .setList(camelToUnderscores("PhoneNumbers"), value.PhoneNumbers.asJava).setString(camelToUnderscores("PostalCode"), value.PostalCode)
+        .setList(camelToUnderscores("PhoneNumbers"), value.PhoneNumbers.asJava)
+        .setString(camelToUnderscores("PostalCode"), value.PostalCode)
         .setString(camelToUnderscores("State"), value.State)
         .setList(camelToUnderscores("Street"), value.Street.asJava)
         .setString(camelToUnderscores("Type"), value.Type)

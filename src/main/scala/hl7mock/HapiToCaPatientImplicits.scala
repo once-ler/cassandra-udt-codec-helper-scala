@@ -70,32 +70,32 @@ object HapiToCaPatientImplicits {
       }
 
     def toCaPatientAddress: Seq[CaPatientAddress] = {
-      val ph = in.getPhoneNumberHome.collect {
-        case a: XPN if a.getPhoneNumber.getValue.length > 0 =>
+      val ph = in.getPhoneNumberHome.map {
+        a =>
           CaPatientPhoneInfo(
             Number = "(" + a.getAreaCityCode.getValue + ") " + a.getPhoneNumber.getValue,
             Type = "Home"
           )
       }
 
-      val pb = in.getPhoneNumberBusiness.collect {
-        case a: XPN if a.getPhoneNumber.getValue.length > 0 =>
+      val pb = in.getPhoneNumberBusiness.map {
+        a =>
           CaPatientPhoneInfo(
             Number = "(" + a.getAreaCityCode.getValue + ") " + a.getPhoneNumber.getValue,
             Type = "Business"
           )
       }
 
-      val eh = in.getPhoneNumberHome.collect {
-        case a: XPN if a.getEmailAddress.getValueOrEmpty.length > 0 =>
+      val eh = in.getPhoneNumberHome.map {
+        a =>
           CaPatientEmailInfo(
             Email = a.getEmailAddress.getValueOrEmpty,
             Type = "Home"
           )
       }
 
-      val eb = in.getPhoneNumberBusiness.collect {
-        case a: XPN if a.getEmailAddress.getValueOrEmpty.length > 0 =>
+      val eb = in.getPhoneNumberBusiness.map {
+        a =>
           CaPatientEmailInfo(
             Email = a.getEmailAddress.getValueOrEmpty,
             Type = "Business"
