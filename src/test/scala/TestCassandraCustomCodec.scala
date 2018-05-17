@@ -42,6 +42,7 @@ class TestCassandraCustomSpec extends fixture.FunSpec with Matchers with fixture
           val provider = CaCustomCodecProvider("127.0.0.1", "keyspace", "cassandra", "abracadabra")
 
           provider.register[CaPatientPhoneInfo]
+            .register[CaPatientEmailInfo]
             .register[CaPatientIdType]
             .register[CaPatientNameComponents]
             .register[CaPatientAddress]
