@@ -67,9 +67,9 @@ class TestCassandraCustomSpec extends fixture.FunSpec with Matchers with fixture
 
           println("Binder")
 
-          val insertQuery = insertStatement("dwh", el)
-          val qs = insertQuery.getQueryString()
-          val stmt0 = new SimpleStatement(insertQuery.toString)
+          val insertStatement = el getInsertStatement("dwh")
+          val qs = insertStatement.getQueryString()
+          val stmt0 = new SimpleStatement(insertStatement.toString)
 
           println("Insert Statement")
 
