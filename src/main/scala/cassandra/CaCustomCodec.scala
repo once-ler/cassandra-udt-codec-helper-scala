@@ -1,111 +1,31 @@
 package com.eztier.cassandra
 
-import java.nio.ByteBuffer
-import java.text.SimpleDateFormat
-import java.util.Date
-
 import akka.stream.scaladsl.Flow
 
-import scala.collection.JavaConverters._
-import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.{Future, Promise}
 import scala.reflect.runtime.universe._
 import com.datastax.driver.core._
-import com.datastax.driver.core.querybuilder.{Insert, QueryBuilder}
+import com.datastax.driver.core.querybuilder.Insert
 import com.google.common.reflect.TypeToken
 import com.google.common.util.concurrent.FutureCallback
 import com.google.common.util.concurrent.Futures
 import com.eztier.cassandra.CaCommon.{camelToUnderscores, getFieldNames}
+import io.getquill.context.cassandra.cluster.ClusterBuilder
 
-/*
-// Example results.
-class CaPatientPhoneInfoCodec(innerCodec: TypeCodec[UDTValue], javaType: Class[CaPatientPhoneInfo]) extends TypeCodec[CaPatientPhoneInfo](innerCodec.getCqlType, javaType) {
-
-  val userType: UserType = innerCodec.getCqlType.asInstanceOf
-
-  override def serialize(value: CaPatientPhoneInfo, protocolVersion: ProtocolVersion) = innerCodec.serialize(toUDTValue(value), protocolVersion)
-
-  override def deserialize(bytes: ByteBuffer , protocolVersion: ProtocolVersion) = toCaPatientPhoneInfo(innerCodec.deserialize(bytes, protocolVersion))
-
-  override def format(value: CaPatientPhoneInfo): String =
-    if (value == null) null else innerCodec.format(toUDTValue(value))
-
-  override def parse(value: String): CaPatientPhoneInfo =
-    if (value == null || value.isEmpty || value.equalsIgnoreCase("NULL")) null else toCaPatientPhoneInfo(innerCodec.parse(value))
-
-  protected def toCaPatientPhoneInfo(value: UDTValue) =
-    if (value == null) null
-    else CaPatientPhoneInfo(Number = value.getString("number"), Type = value.getString("type"))
-
-  protected def toUDTValue(value: CaPatientPhoneInfo): UDTValue =
-    if (value == null) null
-    else userType.newValue.setString("number", value.Number).setString("type", value.Type)
-}
-*/
-trait WithInsertStatement {
-  def getInsertStatement(keySpace: String): Insert
-}
-
-trait CaCustomCodecImplicits {
-  implicit def toCaCodec[T](innerCodec: TypeCodec[UDTValue])(implicit typeTag: TypeTag[T]): CaCodec[_]
-
-  implicit class insertValues(insert: Insert) {
-    def values(vals: (String, Any)*) = {
-      vals.foldLeft(insert)((i, v) => i.value(v._1, v._2))
-    }
-  }
-
-  implicit class GetQueryBuilderInsert[T](in: T) {
-    def insertQuery(keySpace: String) = QueryBuilder.insertInto(keySpace, camelToUnderscores(in.getClass.getSimpleName))
-  }
-}
-
-trait CaCodec[T] {
-  implicit val innerCodec: TypeCodec[UDTValue]
-  val userType: UserType = innerCodec.getCqlType().asInstanceOf[UserType]
-
-  def serialize(value: T, protocolVersion: ProtocolVersion) = innerCodec.serialize(toUDTValue(value), protocolVersion)
-
-  def deserialize(bytes: ByteBuffer , protocolVersion: ProtocolVersion) = toCaClass(innerCodec.deserialize(bytes, protocolVersion))
-
-  def format(value: T): String =
-    if (value == null) null else innerCodec.format(toUDTValue(value))
-
-  def parse(value: String): T =
-    if (value == null || value.isEmpty || value.equalsIgnoreCase("NULL")) null.asInstanceOf[T] else toCaClass(innerCodec.parse(value))
-
-  def toCaClass(value: UDTValue): T = null.asInstanceOf[T]
-
-  def toUDTValue(value: T): UDTValue = null
-}
-
-/*
-  '''scala
-  // register() will perform the following on the fly if the TypeCodec boilerplats have been created.
-
-  // Retrieve the meta
-  val aType: UserType = cluster.getMetadata().getKeyspace(keySpace).getUserType(camelToUnderscores(CaPatientPhoneInfo.getClass.getSimpleName));
-  val aTypeCodec: TypeCodec[UDTValue] = cluster.getConfiguration.getCodecRegistry.codecFor(aType);
-
-  // Associate the codec
-  val codec = CaPatientPhoneInfoCodec(aTypeCodec, classOf[CaPatientPhoneInfo])
-
-  // Register
-  cluster.getConfiguration.getCodecRegistry.register(codec)
-  '''
-*/
+import scala.collection.JavaConverters._
 
 // Default codec
 case class CaDefaultUdtCodec(innerCodec: TypeCodec[UDTValue])
   extends TypeCodec[UDTValue](innerCodec.getCqlType, TypeToken.of(classOf[UDTValue]))
     with CaCodec[UDTValue]
 
-case class CaCustomCodecProvider(endpoint: String, keySpace: String, user: String, pass: String) extends CaStreamFlowTask {
-  implicit val session = Cluster.builder
+case class CaCustomCodecProvider(endpoint: String, keySpace: String, user: String, pass: String, port: Int = 9042) extends CaStreamFlowTask {
+  implicit lazy val session = Cluster.builder
     .addContactPoint(endpoint)
-    .withPort(9042)
+    .withPort(port)
     .withCredentials(user, pass)
     .build
-    .connect()
+    .connect(keySpace)
 
   private val cluster = session.getCluster
   private val registry = cluster.getConfiguration.getCodecRegistry
@@ -167,3 +87,66 @@ case class CaCustomCodecProvider(endpoint: String, keySpace: String, user: Strin
   }
 
 }
+
+// Note: must match datastax configuration
+object CaCustomCodecProvider {
+  def apply(path: String) = {
+    import com.typesafe.config._
+    val conf = ConfigFactory.load()
+
+    if (!conf.hasPath(path))
+      throw new IllegalArgumentException(s"No configuration setting found for path $path")
+
+    val config = conf.getConfig(path)
+    val keySpace = config.getString("keyspace")
+    val sessionConf = config.getConfig("session")
+    val contactPoint = sessionConf.getString("contactPoint")
+    val port = sessionConf.getInt("port")
+    val cred = sessionConf.getStringList("credentials").asScala
+
+    new CaCustomCodecProvider(contactPoint, keySpace, cred(0), cred(1), port)
+  }
+}
+
+/*
+// Example results.
+class CaPatientPhoneInfoCodec(innerCodec: TypeCodec[UDTValue], javaType: Class[CaPatientPhoneInfo]) extends TypeCodec[CaPatientPhoneInfo](innerCodec.getCqlType, javaType) {
+
+  val userType: UserType = innerCodec.getCqlType.asInstanceOf
+
+  override def serialize(value: CaPatientPhoneInfo, protocolVersion: ProtocolVersion) = innerCodec.serialize(toUDTValue(value), protocolVersion)
+
+  override def deserialize(bytes: ByteBuffer , protocolVersion: ProtocolVersion) = toCaPatientPhoneInfo(innerCodec.deserialize(bytes, protocolVersion))
+
+  override def format(value: CaPatientPhoneInfo): String =
+    if (value == null) null else innerCodec.format(toUDTValue(value))
+
+  override def parse(value: String): CaPatientPhoneInfo =
+    if (value == null || value.isEmpty || value.equalsIgnoreCase("NULL")) null else toCaPatientPhoneInfo(innerCodec.parse(value))
+
+  protected def toCaPatientPhoneInfo(value: UDTValue) =
+    if (value == null) null
+    else CaPatientPhoneInfo(Number = value.getString("number"), Type = value.getString("type"))
+
+  protected def toUDTValue(value: CaPatientPhoneInfo): UDTValue =
+    if (value == null) null
+    else userType.newValue.setString("number", value.Number).setString("type", value.Type)
+}
+*/
+
+
+/*
+  '''scala
+  // register() will perform the following on the fly if the TypeCodec boilerplats have been created.
+
+  // Retrieve the meta
+  val aType: UserType = cluster.getMetadata().getKeyspace(keySpace).getUserType(camelToUnderscores(CaPatientPhoneInfo.getClass.getSimpleName));
+  val aTypeCodec: TypeCodec[UDTValue] = cluster.getConfiguration.getCodecRegistry.codecFor(aType);
+
+  // Associate the codec
+  val codec = CaPatientPhoneInfoCodec(aTypeCodec, classOf[CaPatientPhoneInfo])
+
+  // Register
+  cluster.getConfiguration.getCodecRegistry.register(codec)
+  '''
+*/
