@@ -43,7 +43,7 @@ trait CaUdt {
         val s: String = {
           if (f.getType.getSimpleName == "Seq")
             f.getGenericType.getTypeName match {
-              case a if a.contains("CaPatient") => handleSeqCaUdt(o.asInstanceOf[Seq[CaUdt]])
+              case a if o.isInstanceOf[Seq[CaUdt]] => handleSeqCaUdt(o.asInstanceOf[Seq[CaUdt]])
               case a if a.contains("java.lang.String") => handleSeqString(o.asInstanceOf[Seq[String]])
               case a if a.contains("java.util.Date") => handleSeqDate(o.asInstanceOf[Seq[Date]])
               case a if a.contains("java.lang.Double") => handleSeqDouble(o.asInstanceOf[Seq[Double]])
