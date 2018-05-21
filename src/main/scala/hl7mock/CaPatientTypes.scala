@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 
 import com.eztier.cassandra.{CaTbl, CaUdt}
+import org.joda.time.DateTime
 
 case class CaPatientPhoneInfo (
   Number: String = "",
@@ -76,7 +77,7 @@ case class CaPatient(
   CareTeam: Seq[CaPatientCareTeamMember] = Seq(),
   ConfidentialName: String = "",
   CreateDate: Date = new Date(),
-  DateOfBirth: Date = new Date(),
+  DateOfBirth: Date = new DateTime(1900, 1, 1, 0, 0, 0).toDate,
   EmergencyContacts: Seq[CaPatientEmergencyContact] = Seq(),
   EmploymentInformation: CaPatientEmploymentInformation = CaPatientEmploymentInformation(),
   Ethnicity: Seq[String] = Seq(),
@@ -111,3 +112,4 @@ case class CaPatientControl(
   StateProvince: String = "",
   Street: String = ""
 ) extends CaTbl
+
