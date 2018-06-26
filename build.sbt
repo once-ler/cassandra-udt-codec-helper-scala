@@ -1,3 +1,5 @@
+import ReleaseTransformations._
+
 lazy val compilerOptions = Seq(
   "-unchecked",
   "-feature",
@@ -12,8 +14,9 @@ lazy val compilerOptions = Seq(
 )
 
 lazy val commonSettings = Seq(
-  version := "0.2.13",
+  version := "0.2.15-SNAPSHOT",
   organization := "com.eztier",
+  name := "cassandra-udt-codec-helper-scala",
   scalaVersion := "2.12.4",
   scalacOptions ++= compilerOptions,
   resolvers ++= Seq(
@@ -22,6 +25,8 @@ lazy val commonSettings = Seq(
     Resolver.sonatypeRepo("snapshots")
   )
 )
+
+lazy val scalaReflect = Def.setting { "org.scala-lang" % "scala-reflect" % scalaVersion.value }
 
 val datastaxDriver = "com.datastax.cassandra" %  "cassandra-driver-core" % "3.4.0" 
 val scalaTest = "org.scalatest" %% "scalatest" % "3.0.4" % Test
@@ -36,10 +41,10 @@ val hapiV231 = "ca.uhn.hapi" % "hapi-structures-v231" % "2.3"
 lazy val root = (project in file(".")).
   settings(commonSettings: _*).
   settings(
-    name := "test-scalaxb",
     libraryDependencies ++= Seq(
       datastaxDriver,
       scalaTest,
+      scalaReflect.value,
       logback,
       jodaTime,
       akkaStream,
@@ -49,3 +54,57 @@ lazy val root = (project in file(".")).
       hapiV231
     )
   )
+
+// Publishing
+
+licenses := Seq("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
+
+homepage := Some(url("https://github.com/once-ler/cassandra-udt-codec-helper-scala"))
+
+publishMavenStyle := true
+
+publishArtifact in Test := false
+
+pomIncludeRepository := (_ ⇒ false)
+
+releaseCrossBuild := true
+
+// publishTo := Some(Resolver.file("file", new File("/home/users/htao/tmp")))
+
+publishTo := Some(
+  if (isSnapshot.value)
+    "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+  else
+    "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
+
+scmInfo := Some(
+  ScmInfo(
+    browseUrl = url("https://github.com/once-ler/cassandra-udt-codec-helper-scala"),
+    connection = "scm:git@github.com:once-ler/cassandra-udt-codec-helper-scala.git"
+  )
+)
+
+developers := List(
+  Developer(
+    id = "once-ler",
+    name = "Henry Tao",
+    email = "htao@eztier.com",
+    url = url("https://github.com/once-ler")
+  )
+)
+
+releaseProcess := Seq[ReleaseStep](
+  checkSnapshotDependencies,
+  inquireVersions,
+  runClean,
+  runTest,
+  setReleaseVersion,
+  commitReleaseVersion,
+  tagRelease,
+  publishArtifacts,
+  setNextVersion,
+  commitNextVersion,
+  pushChanges
+)
+
+
