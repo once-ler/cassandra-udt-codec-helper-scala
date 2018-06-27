@@ -1,3 +1,4 @@
+/*
 import java.nio.ByteBuffer
 import java.{lang, util}
 
@@ -94,3 +95,4 @@ class TestCassandraCustomSpec extends fixture.FunSpec with Matchers with fixture
 
   }
 }
+*/

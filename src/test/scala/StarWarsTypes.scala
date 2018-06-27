@@ -1,22 +1,22 @@
-package test
+package com.eztier.test
 
-import java.util.Date
+import com.eztier.cassandra.{CaTbl, CaUdt}
 
 object StarWarsTypes {
   case class Episode (
     Id: Byte,
     Name: String
-  )
+  ) extends CaUdt
 
   case class Character (
     Id: String,
     Name: String,
     AppearsIn: Seq[Episode]
-  )
+  ) extends CaUdt
 
   trait WithCharacter {
-    def Id: String,
-    def Name: String,
+    def Id: String
+    def Name: String
     def AppearsIn: Seq[Episode]
   }
 
@@ -30,7 +30,11 @@ object StarWarsTypes {
     AppearsIn: Seq[Episode],
     Friends: Seq[Character],
     PrimaryFunction: String
-  ) extends WithCharacter with WithFriends
+  ) extends WithCharacter with WithFriends with CaUdt
+
+  object Droid {
+    def apply(c: Character, f: Seq[Character], p: String) = new Droid(c.Id, c.Name, c.AppearsIn, f, p)
+  }
 
   case class Human (
     Id: String,
@@ -38,7 +42,11 @@ object StarWarsTypes {
     AppearsIn: Seq[Episode],
     Friends: Seq[Character],
     HomePlanet: String
-  ) extends WithCharacter with WithFriends
+  ) extends WithCharacter with WithFriends with CaUdt
+
+  object Human {
+    def apply(c: Character, f: Seq[Character], h: String) = new Human(c.Id, c.Name, c.AppearsIn, f, h)
+  }
 
   case class Movie (
     Id: String,
@@ -46,5 +54,5 @@ object StarWarsTypes {
     EpisodeReleased: Episode,
     Droids: Seq[Droid],
     Humans: Seq[Human]
-  )
+  ) extends CaTbl
 }

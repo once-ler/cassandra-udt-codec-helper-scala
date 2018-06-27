@@ -9,23 +9,23 @@ create type if not exists starwars.episode (
 create type if not exists starwars.character (
   id text,
   name text,
-  appearsIn list<frozen<starwars.episode>>
+  appears_in list<frozen<starwars.episode>>
 );
 
 create type if not exists starwars.droid (
   id text,
   name text,
   friends list<frozen<starwars.character>>,
-  appearsIn list<frozen<starwars.episode>>,
-  primaryFunction text
+  appears_in list<frozen<starwars.episode>>,
+  primary_function text
 );
 
 create type if not exists starwars.human (
   id text,
   name text,
   friends list<frozen<starwars.character>>,
-  appearsIn list<frozen<starwars.episode>>,
-  homePlanet text
+  appears_in list<frozen<starwars.episode>>,
+  home_planet text
 );
 
 create table if not exists starwars.movie(

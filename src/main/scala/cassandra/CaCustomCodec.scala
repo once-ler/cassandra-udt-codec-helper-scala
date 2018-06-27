@@ -10,7 +10,6 @@ import com.google.common.reflect.TypeToken
 import com.google.common.util.concurrent.FutureCallback
 import com.google.common.util.concurrent.Futures
 import com.eztier.cassandra.CaCommon.{camelToUnderscores, getFieldNames}
-import io.getquill.context.cassandra.cluster.ClusterBuilder
 
 import scala.collection.JavaConverters._
 
