@@ -25,7 +25,9 @@ trait CaUdt {
   def handleSeqDouble(l: Seq[Double]): String = makeSeqString(l, false)
   def handleSeqFloat(l: Seq[Float]): String = makeSeqString(l, false)
   def handleSeqLong(l: Seq[Long]): String = makeSeqString(l, false)
+  def handleSeqInt(l: Seq[Int]): String = makeSeqString(l, false)
   def handleSeqShort(l: Seq[Short]): String = makeSeqString(l, false)
+  def handleSeqByte(l: Seq[Byte]): String = makeSeqString(l, false)
   def handleSeqBoolean(l: Seq[Boolean]): String = makeSeqString(l, false)
   def handleSeqDate(l: Seq[Date]): String = "[" + l.map{ "'"+handleDate(_)+"'" }.mkString(",") + "]"
 
@@ -41,26 +43,23 @@ trait CaUdt {
         val o = f.get(cc)
 
         val s: String = {
-          if (f.getType.getSimpleName == "Seq")
-            f.getGenericType.getTypeName match {
-              case a if o.isInstanceOf[Seq[CaUdt]] => handleSeqCaUdt(o.asInstanceOf[Seq[CaUdt]])
-              case a if a.contains("java.lang.String") => handleSeqString(o.asInstanceOf[Seq[String]])
-              case a if a.contains("java.util.Date") => handleSeqDate(o.asInstanceOf[Seq[Date]])
-              case a if a.contains("java.lang.Double") => handleSeqDouble(o.asInstanceOf[Seq[Double]])
-              case a if a.contains("java.lang.Float") => handleSeqFloat(o.asInstanceOf[Seq[Float]])
-              case a if a.contains("java.lang.Long") => handleSeqLong(o.asInstanceOf[Seq[Long]])
-              case a if a.contains("java.lang.Short") => handleSeqShort(o.asInstanceOf[Seq[Short]])
-              case a if a.contains("java.lang.Boolean") => handleSeqBoolean(o.asInstanceOf[Seq[Boolean]])
-              case _ => ""
-            }
-          else
-            o match {
-              case a: CaUdt => handleCaUdt(a)
-              case a: String => "'" + a + "'"
-              case a: Date => "'" + handleDate(a) + "'"
-              case a @ (Double | Float | Long | Short | Boolean ) => a.toString
-              case _ => ""
-            }
+
+          o match {
+            case a: CaUdt => handleCaUdt(a)
+            case a: String => "'" + a + "'"
+            case a: Date => "'" + handleDate(a) + "'"
+            case a @ (Double | Float | Long | Int | Short | Byte | Boolean) => a.toString
+            case a: Seq[CaUdt] => handleSeqCaUdt(o.asInstanceOf[Seq[CaUdt]])
+            case a: Seq[String] => handleSeqString(o.asInstanceOf[Seq[String]])
+            case a: Seq[Date] => handleSeqDate(o.asInstanceOf[Seq[Date]])
+            case a: Seq[Double] => handleSeqDouble(o.asInstanceOf[Seq[Double]])
+            case a: Seq[Float] => handleSeqFloat(o.asInstanceOf[Seq[Float]])
+            case a: Seq[Long] => handleSeqLong(o.asInstanceOf[Seq[Long]])
+            case a: Seq[Int] => handleSeqInt(o.asInstanceOf[Seq[Int]])
+            case a: Seq[Short] => handleSeqShort(o.asInstanceOf[Seq[Short]])
+            case a: Seq[Byte] => handleSeqByte(o.asInstanceOf[Seq[Byte]])
+            case _ => ""
+          }
         }
 
         a + (camelToUnderscores(f.getName) -> s)

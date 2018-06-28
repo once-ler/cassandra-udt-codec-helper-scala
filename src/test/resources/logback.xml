@@ -27,7 +27,7 @@
 
     <logger name="com.eztier.starwars.akka.StreamTask" level="INFO"/>
 
-    <root level="DEBUG">
+    <root level="ERROR">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
     </root>

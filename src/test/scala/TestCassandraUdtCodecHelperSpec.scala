@@ -107,5 +107,13 @@ class TestCassandraUdtCodecHelperSpec extends FunSpec with Matchers with BeforeA
 
     }
 
+    it("Should construct cql script by recursively iterating through all fields of a table for testing") {
+      val el = movies(0)
+
+      val cql = el.toCaString
+
+      println(cql)
+    }
+
   }
 }
