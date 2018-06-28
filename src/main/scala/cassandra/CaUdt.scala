@@ -35,6 +35,8 @@ trait CaUdt {
 
   def handleSeqCaUdt[A <: CaUdt](l: Seq[A]) = "[" + l.map{ handleCaUdt(_) }.mkString(",") + "]"
 
+  private def pat = "(boolean|byte|short|int|long|float|double)".r
+
   def toCaMap() = {
     val cc = this
     (Map[String, String]() /: cc.getClass.getDeclaredFields) {
@@ -43,12 +45,12 @@ trait CaUdt {
         val o = f.get(cc)
 
         val s: String = {
-
+          // o is AnyRef, Double | Float | Long | Int | Short | Byte | Boolean auto unboxed
           o match {
             case a: CaUdt => handleCaUdt(a)
             case a: String => "'" + a + "'"
             case a: Date => "'" + handleDate(a) + "'"
-            case a @ (Double | Float | Long | Int | Short | Byte | Boolean) => a.toString
+            case a if pat.findFirstIn(f.getType.getSimpleName) != None => a.toString
             case a: Seq[CaUdt] => handleSeqCaUdt(o.asInstanceOf[Seq[CaUdt]])
             case a: Seq[String] => handleSeqString(o.asInstanceOf[Seq[String]])
             case a: Seq[Date] => handleSeqDate(o.asInstanceOf[Seq[Date]])
