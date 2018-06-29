@@ -62,11 +62,10 @@ homepage := Some(url("https://github.com/once-ler/cassandra-udt-codec-helper-sca
 publishMavenStyle := true
 
 publishArtifact in Test := false
-// publishArtifact in makePom := false
 
 pomIncludeRepository := {_ => false}
 
-releaseCrossBuild := true
+releaseCrossBuild := false
 
 releasePublishArtifactsAction := PgpKeys.publishSigned.value
 
@@ -81,7 +80,7 @@ publishTo := Some(
 scmInfo := Some(
   ScmInfo(
     browseUrl = url("https://github.com/once-ler/cassandra-udt-codec-helper-scala"),
-    connection = "scm:git@github.com:once-ler/cassandra-udt-codec-helper-scala.git"
+    connection = "https://github.com/once-ler/cassandra-udt-codec-helper-scala.git"
   )
 )
 
