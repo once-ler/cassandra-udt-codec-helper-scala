@@ -70,14 +70,14 @@ releaseCrossBuild := true
 
 releasePublishArtifactsAction := PgpKeys.publishSigned.value
 
-publishTo := Some(Resolver.file("file", new File("/home/htao/tmp")))
-/*
+// publishTo := Some(Resolver.file("file", new File("/home/htao/tmp")))
+
 publishTo := Some(
   if (isSnapshot.value)
     "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
   else
     "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
-*/
+
 scmInfo := Some(
   ScmInfo(
     browseUrl = url("https://github.com/once-ler/cassandra-udt-codec-helper-scala"),
@@ -100,11 +100,13 @@ releaseProcess := Seq[ReleaseStep](
   runClean,
   runTest,
   setReleaseVersion,
-  // commitReleaseVersion,
-  // tagRelease,
+  commitReleaseVersion,
+  tagRelease,
+  releaseStepCommand("publishSigned"),
   publishArtifacts,
   setNextVersion,
-  // commitNextVersion,
+  commitNextVersion,
+  releaseStepCommand("sonatypeRelease"),
   pushChanges
 )
 
