@@ -68,6 +68,8 @@ pomIncludeRepository := {_ => false}
 
 releaseCrossBuild := true
 
+releasePublishArtifactsAction := PgpKeys.publishSigned.value
+
 publishTo := Some(Resolver.file("file", new File("/home/htao/tmp")))
 /*
 publishTo := Some(
