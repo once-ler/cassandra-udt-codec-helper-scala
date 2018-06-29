@@ -64,6 +64,7 @@ trait CaUdt {
           }
         }
 
+
         a + (camelToUnderscores(f.getName) -> s)
     }
   }
@@ -91,11 +92,6 @@ trait CaTbl extends CaUdt {
         a
     }
 
-    s"""
-       |insert into ${camelToUnderscores(getClass().getSimpleName)}
-       | (${f._1.mkString(",")})
-       | values
-       | (${f._2.mkString(",")})
-       """.stripMargin
+    s"""insert into ${camelToUnderscores(getClass().getSimpleName)} (${f._1.mkString(",")}) values (${f._2.mkString(",")})""".stripMargin
   }
 }

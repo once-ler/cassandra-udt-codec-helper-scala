@@ -7,6 +7,7 @@ import StarWarsTypes._
 import com.datastax.driver.core.ResultSet
 import com.datastax.driver.core.querybuilder.QueryBuilder
 import com.eztier.cassandra.CaCommon.camelToUnderscores
+import com.typesafe.config.{Config, ConfigFactory}
 // import StarWarsImplicits._
 import akka.actor.ActorSystem
 import akka.actor.Status.Failure
@@ -108,11 +109,26 @@ class TestCassandraUdtCodecHelperSpec extends FunSpec with Matchers with BeforeA
     }
 
     it("Should construct cql script by recursively iterating through all fields of a table for testing") {
-      val el = movies(0)
+      val fixtures = ConfigFactory.load("fixtures")
+      val fxNewHope = fixtures.getString("spec-test.new-hope")
+      val fxC3po = fixtures.getString("spec-test.c-3po")
+      val fxLuke = fixtures.getString("spec-test.luke-skywalker")
+      val fxInsertEmpireCql = fixtures.getString("spec-test.insert-empire-cql")
 
-      val cql = el.toCaString
+      val (_, _, episode, droids, humans) = Movie.unapply(movies(0)).get
 
-      println(cql)
+      val e = episode.toCaString
+      e should be (fxNewHope)
+
+      val d0 = droids(0).toCaString
+      d0 should be (fxC3po)
+
+      val h0 = humans(0).toCaString
+      h0 should be (fxLuke)
+
+      val tbl = movies(1)
+      val insertCql = tbl.getInsertStmt
+      insertCql should be (fxInsertEmpireCql)
     }
 
   }

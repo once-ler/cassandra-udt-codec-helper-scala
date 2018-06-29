@@ -55,4 +55,9 @@ object StarWarsTypes {
     Droids: Seq[Droid],
     Humans: Seq[Human]
   ) extends CaTbl
+
+  object Movie {
+    def unapply(arg: Movie): Option[(String, Int, Episode, Seq[Droid], Seq[Human])] =
+      Some(arg.Id, arg.YearReleased, arg.EpisodeReleased, arg.Droids, arg.Humans)
+  }
 }
