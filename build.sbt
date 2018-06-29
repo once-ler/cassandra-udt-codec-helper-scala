@@ -71,16 +71,20 @@ releasePublishArtifactsAction := PgpKeys.publishSigned.value
 
 // publishTo := Some(Resolver.file("file", new File("/home/htao/tmp")))
 
+publishTo := sonatypePublishTo.value
+
+/*
 publishTo := Some(
   if (isSnapshot.value)
     "snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
   else
     "releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2")
+*/
 
 scmInfo := Some(
   ScmInfo(
     browseUrl = url("https://github.com/once-ler/cassandra-udt-codec-helper-scala"),
-    connection = "https://github.com/once-ler/cassandra-udt-codec-helper-scala.git"
+    connection = "scm:git@github.com:once-ler/cassandra-udt-codec-helper-scala.git"
   )
 )
 
