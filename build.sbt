@@ -14,7 +14,7 @@ lazy val compilerOptions = Seq(
 )
 
 lazy val commonSettings = Seq(
-  version := "0.2.16-SNAPSHOT",
+  version := "0.2.16",
   organization := "com.eztier",
   name := "cassandra-udt-codec-helper-scala",
   scalaVersion := "2.12.4",
@@ -54,6 +54,7 @@ lazy val root = (project in file(".")).
   )
 
 // Publishing
+sonatypeProfileName := "com.eztier"
 
 licenses := Seq("The Apache Software License, Version 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
 
@@ -105,11 +106,11 @@ releaseProcess := Seq[ReleaseStep](
   setReleaseVersion,
   commitReleaseVersion,
   tagRelease,
-  releaseStepCommand("publishSigned"),
-  publishArtifacts,
+  // releaseStepCommand("publishSigned"),
+  // publishArtifacts,
   setNextVersion,
   commitNextVersion,
-  releaseStepCommand("sonatypeRelease"),
+  // releaseStepCommand("sonatypeRelease"),
   pushChanges
 )
 
