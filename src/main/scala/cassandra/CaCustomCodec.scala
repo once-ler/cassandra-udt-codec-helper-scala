@@ -1,5 +1,7 @@
 package com.eztier.cassandra
 
+import java.net.{InetAddress, InetSocketAddress}
+
 import akka.stream.scaladsl.Flow
 
 import scala.concurrent.{Future, Promise}
@@ -18,9 +20,9 @@ case class CaDefaultUdtCodec(innerCodec: TypeCodec[UDTValue])
   extends TypeCodec[UDTValue](innerCodec.getCqlType, TypeToken.of(classOf[UDTValue]))
     with CaCodec[UDTValue]
 
-case class CaCustomCodecProvider(endpoint: String, keySpace: String, user: String, pass: String, port: Int = 9042) extends CaStreamFlowTask {
+case class CaCustomCodecProvider(endpoints: java.util.Collection[InetAddress], keySpace: String, user: String, pass: String, port: Int = 9042) extends CaStreamFlowTask {
   implicit lazy val session = Cluster.builder
-    .addContactPoint(endpoint)
+    .addContactPoints(endpoints)
     .withPort(port)
     .withCredentials(user, pass)
     .build
@@ -99,11 +101,29 @@ object CaCustomCodecProvider {
     val config = conf.getConfig(path)
     val keySpace = config.getString("keyspace")
     val sessionConf = config.getConfig("session")
-    val contactPoint = sessionConf.getString("contactPoint")
-    val port = sessionConf.getInt("port")
+    val contactPoint =
+      if (sessionConf.hasPath("contactPoints"))
+        sessionConf.getString("contactPoint")
+      else "127.0.0.1"
+    val port =
+      if (sessionConf.hasPath("port"))
+        sessionConf.getInt("port")
+      else 9042
     val cred = sessionConf.getStringList("credentials").asScala
+    val endpoints = sessionConf.hasPath("contactPoints") match {
+      case true => sessionConf.getStringList("contactPoints").asScala
+      case _ => Seq(contactPoint)
+    }
 
-    new CaCustomCodecProvider(contactPoint, keySpace, cred(0), cred(1), port)
+    val contactPoints = endpoints.map {
+      a =>
+        if (a.contains(":")) {
+          val addr = a.split(":")
+          new InetSocketAddress(addr(0), addr(1).toInt).getAddress
+        } else new InetSocketAddress(a, port).getAddress
+    }
+
+    new CaCustomCodecProvider(contactPoints.asJavaCollection, keySpace, cred(0), cred(1), port)
   }
 }
 
