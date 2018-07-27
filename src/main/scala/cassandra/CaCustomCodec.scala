@@ -102,7 +102,7 @@ object CaCustomCodecProvider {
     val keySpace = config.getString("keyspace")
     val sessionConf = config.getConfig("session")
     val contactPoint =
-      if (sessionConf.hasPath("contactPoints"))
+      if (sessionConf.hasPath("contactPoint"))
         sessionConf.getString("contactPoint")
       else "127.0.0.1"
     val port =
