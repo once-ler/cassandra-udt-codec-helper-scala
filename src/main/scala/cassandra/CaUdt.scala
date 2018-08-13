@@ -64,7 +64,6 @@ trait CaUdt {
           }
         }
 
-
         a + (camelToUnderscores(f.getName) -> s)
     }
   }
@@ -78,6 +77,45 @@ trait CaUdt {
     }
 
     "{" + b.mkString(",") + "}"
+  }
+
+  def getCreateStmt(keySpace: String, objectType: String = "type") = {
+    val cc = this
+    (Map[String, String]() /: cc.getClass.getDeclaredFields) {
+      (a, f) =>
+        f.setAccessible(true)
+        val o = f.get(cc)
+
+        val s: String = {
+          o match {
+            case a: CaUdt => "frozen<" + keySpace + "." + camelToUnderscores(f.getName) + ">"
+            case a: String => "text"
+            case a: Date => "timestamp"
+            case a: java.math.BigDecimal => "decimal"
+            case a: java.lang.Float => "float"
+            case a: java.lang.Double => "double"
+            case a: java.lang.Long => "bigint"
+            case a: java.lang.Integer => "int"
+            case a: java.lang.Short => "smallint"
+            case a: java.lang.Byte => "tinyint"
+            case a: java.lang.Boolean => "boolean"
+            case a: Seq[CaUdt] => "list<frozen<" + keySpace + "." + camelToUnderscores(f.getName) + ">>"
+            case a: Seq[String] => "list<text>"
+            case a: Seq[Date] => "list<timestamp>"
+            case a: Seq[BigDecimal] => "list<decimal>"
+            case a: Seq[Double] => "list<double>"
+            case a: Seq[Float] => "list<float>"
+            case a: Seq[Long] => "list<bigint>"
+            case a: Seq[Int] => "list<int>"
+            case a: Seq[Short] => "list<smallint>"
+            case a: Seq[Byte] => "list<tinyint>"
+            case a: Seq[Boolean] => "list<boolean>"
+            case _ => ""
+          }
+        }
+
+        a + (camelToUnderscores(f.getName) -> s)
+    }
   }
 }
 
