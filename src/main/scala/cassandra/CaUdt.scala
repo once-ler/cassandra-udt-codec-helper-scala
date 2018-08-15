@@ -151,7 +151,7 @@ trait CaTbl extends CaUdt {
     s"""insert into ${camelToUnderscores(getClass().getSimpleName)} (${f._1.mkString(",")}) values (${f._2.mkString(",")})""".stripMargin
   }
 
-  def getCreateStmt(partitionKeys: String*) = (clusteringKeys: String*) => (orderBy: Option[String], direction: Option[Int]) => {
+  def getCreateStmt(partitionKeys: String*) = (clusteringKeys: Seq[String]) => (orderBy: Option[String], direction: Option[Int]) => {
 
     val f = getClass.getDeclaredFields.map(_.getName)
 

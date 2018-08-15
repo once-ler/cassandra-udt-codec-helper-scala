@@ -18,6 +18,10 @@ import com.eztier.cassandra.CaCustomCodecProvider
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+trait SomeTrait {}
+case class AClass(field0: String) extends SomeTrait
+case class BClass(aClass: AClass, aClasses: Seq[AClass])
+
 class TestCassandraUdtCodecHelperSpec extends FunSpec with Matchers with BeforeAndAfter {
   implicit val system = ActorSystem("Sys")
   implicit val ec = system.dispatcher
@@ -129,6 +133,34 @@ class TestCassandraUdtCodecHelperSpec extends FunSpec with Matchers with BeforeA
       val tbl = movies(1)
       val insertCql = tbl.getInsertStmt
       insertCql should be (fxInsertEmpireCql)
+    }
+
+    it("Should construct cql script to create the UDT or table for testing") {
+      import scala.reflect.runtime.universe._
+
+      import com.eztier.cassandra.CaCommon._
+
+      val m = toCaTypeTest[BClass]
+      m.map {
+        symbol =>
+          val n = symbol.name
+          val t = symbol.info.resultType
+          val v = t.typeArgs
+
+          val m = t match {
+            case a if t <:< typeOf[SomeTrait] => t.typeSymbol.name
+            case a if t <:< typeOf[Seq[SomeTrait]] => s"list<${v(0).typeSymbol.name}>"
+            case _ => "Don't know"
+          }
+      }
+
+      val n = toCaType[Movie]
+
+      for (z <- n) {
+        println(s"${z._1}: ${z._2}")
+      }
+
+      println("done")
     }
 
   }
