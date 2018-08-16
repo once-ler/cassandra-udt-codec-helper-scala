@@ -163,5 +163,17 @@ class TestCassandraUdtCodecHelperSpec extends FunSpec with Matchers with BeforeA
       println("done")
     }
 
+    it("Should construct cql script to create the UDT or table for testing 2") {
+      import com.eztier.cassandra.CaCommon._
+
+      val s = getCreateStmt[Droid]
+
+      println(s)
+
+      val m = getCreateStmt[Movie]
+
+      println(m)
+    }
+
   }
 }

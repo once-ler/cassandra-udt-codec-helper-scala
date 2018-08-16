@@ -2,6 +2,7 @@ package com.eztier.cassandra
 
 import java.util.Date
 
+import scala.collection.mutable.ArrayBuffer
 import scala.reflect.runtime.universe._
 
 object CaCommon {
@@ -87,4 +88,64 @@ object CaCommon {
     m
   }
 
+  def getCreateStmt[T](implicit typeTag: TypeTag[T]) = {
+    val o = typeTag.tpe.resultType
+
+    val objectType = o match {
+      case a if a <:< typeOf[CaTbl] => "table"
+      case _ => "type"
+    }
+
+    val m = toCaType[T]
+
+    val f = (ArrayBuffer[String]() /: m) {
+      (a, n) =>
+        a += n._1 + " " + n._2
+        a
+    }
+
+    s"""create ${objectType} if not exists ${camelToUnderscores(o.typeSymbol.name.toString)} (
+       |${f.mkString(",")}
+       |);
+     """.stripLineEnd.stripMargin
+  }
+
+  def getCreateStmt[T: TypeTag](partitionKeys: String*)(clusteringKeys: String*)(orderBy: Option[String], direction: Option[Int]) = {
+
+    // TODO: overloaded method getCreateStmt needs result type
+    val t = getCreateStmt[T]
+
+    val o = typeTag.tpe.resultType
+
+    o match {
+      case a if a <:< typeOf[CaTbl] =>
+        val f = classAccessors[T].map(_.name.toString)
+
+        val pk = partitionKeys.collect {
+          case a if f.find(_ == a) != None => camelToUnderscores(a)
+        }.mkString(",")
+
+        val ck = clusteringKeys.collect {
+          case a if f.find(_ == a) != None => camelToUnderscores(a)
+        }.mkString(",")
+
+        val sb = orderBy match {
+          case Some(a) if a.length > 0 && f.find(_ == a) != None =>
+            camelToUnderscores(a) + (
+              direction match {
+                case Some(b) => if (b > 0) "asc" else "desc"
+                case None => "asc"
+              })
+          case None => ""
+        }
+
+        t.substring(0, t.length - 2) +
+          s"((${pk})" +
+          (if (ck.length > 0) s",${ck})" else ")") +
+          sb
+
+      case _ => t // Just return type creation script b/c there's no primary keys.
+    }
+
+  }
 }
