@@ -88,7 +88,7 @@ object CaCommon {
     m
   }
 
-  def getCreateStmt[T](implicit typeTag: TypeTag[T]) = {
+  def getCreateStmt[T](implicit typeTag: TypeTag[T]): String = {
     val o = typeTag.tpe.resultType
 
     val objectType = o match {
@@ -104,22 +104,20 @@ object CaCommon {
         a
     }
 
-    s"""create ${objectType} if not exists ${camelToUnderscores(o.typeSymbol.name.toString)} (
-       |${f.mkString(",")}
-       |);
-     """.stripLineEnd.stripMargin
+    s"create ${objectType} if not exists ${camelToUnderscores(o.typeSymbol.name.toString)} (${f.mkString(",")});"
   }
 
-  def getCreateStmt[T: TypeTag](partitionKeys: String*)(clusteringKeys: String*)(orderBy: Option[String], direction: Option[Int]) = {
+  def getCreateStmt[T: TypeTag](partitionKeys: String*)(clusteringKeys: String*)(orderBy: Option[String] = None, direction: Option[Int] = None): String = {
 
-    // TODO: overloaded method getCreateStmt needs result type
-    val t = getCreateStmt[T]
+    val t: String = getCreateStmt[T]
 
     val o = typeTag.tpe.resultType
+    val n = camelToUnderscores(o.typeSymbol.name.toString)
 
     o match {
       case a if a <:< typeOf[CaTbl] =>
-        val f = classAccessors[T].map(_.name.toString)
+        val members = classAccessors[T]
+        val f = members.map(_.name.toString)
 
         val pk = partitionKeys.collect {
           case a if f.find(_ == a) != None => camelToUnderscores(a)
@@ -131,18 +129,30 @@ object CaCommon {
 
         val sb = orderBy match {
           case Some(a) if a.length > 0 && f.find(_ == a) != None =>
-            camelToUnderscores(a) + (
-              direction match {
-                case Some(b) => if (b > 0) "asc" else "desc"
-                case None => "asc"
-              })
+            val sort = direction match {
+              case Some(b) => if (b > 0) "asc" else "desc"
+              case None => "asc"
+            }
+
+            s" with clustering order by ${camelToUnderscores(a)} ${sort}"
           case None => ""
         }
 
-        t.substring(0, t.length - 2) +
-          s"((${pk})" +
-          (if (ck.length > 0) s",${ck})" else ")") +
-          sb
+        // Create non-primary key text indexes
+        val idx = members.collect {
+          case a if a.info.resultType == typeOf[String] && partitionKeys.find(_ == a.name.toString) == None && clusteringKeys.find(_ == a.name.toString) == None => a.name.toString
+        }.map {
+          a =>
+            val c = camelToUnderscores(a)
+            s"create custom index on ${n}(${c}) using 'org.apache.cassandra.index.sasi.SASIIndex' with options = {'mode': 'CONTAINS', 'analyzer_class': 'org.apache.cassandra.index.sasi.analyzer.NonTokenizingAnalyzer', 'case_sensitive': 'false'};"
+        }.mkString("\n")
+
+        val trim = t.substring(0, t.length - 2)
+        trim +
+          s", primary key ((${pk})" +
+          (if (ck.length > 0) s", ${ck})" else ")") +
+          sb + ";\n" +
+          idx
 
       case _ => t // Just return type creation script b/c there's no primary keys.
     }

@@ -53,11 +53,12 @@ object StarWarsTypes {
     YearReleased: Int,
     EpisodeReleased: Episode,
     Droids: Seq[Droid],
-    Humans: Seq[Human]
+    Humans: Seq[Human],
+    Comment: String = ""
   ) extends CaTbl with CaUdt
 
   object Movie {
-    def unapply(arg: Movie): Option[(String, Int, Episode, Seq[Droid], Seq[Human])] =
-      Some(arg.Id, arg.YearReleased, arg.EpisodeReleased, arg.Droids, arg.Humans)
+    def unapply(arg: Movie): Option[(String, Int, Episode, Seq[Droid], Seq[Human], String)] =
+      Some(arg.Id, arg.YearReleased, arg.EpisodeReleased, arg.Droids, arg.Humans, arg.Comment)
   }
 }

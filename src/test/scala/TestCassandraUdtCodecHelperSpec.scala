@@ -119,7 +119,7 @@ class TestCassandraUdtCodecHelperSpec extends FunSpec with Matchers with BeforeA
       val fxLuke = fixtures.getString("spec-test.luke-skywalker")
       val fxInsertEmpireCql = fixtures.getString("spec-test.insert-empire-cql")
 
-      val (_, _, episode, droids, humans) = Movie.unapply(movies(0)).get
+      val (_, _, episode, droids, humans, _) = Movie.unapply(movies(0)).get
 
       val e = episode.toCaString
       e should be (fxNewHope)
@@ -173,6 +173,10 @@ class TestCassandraUdtCodecHelperSpec extends FunSpec with Matchers with BeforeA
       val m = getCreateStmt[Movie]
 
       println(m)
+
+      val m2 = getCreateStmt[Movie]("Id")("YearReleased")(Some("YearReleased"), Some(-1))
+
+      println(m2)
     }
 
   }
