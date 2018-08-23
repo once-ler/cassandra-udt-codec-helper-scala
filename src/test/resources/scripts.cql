@@ -34,7 +34,6 @@ create table if not exists starwars.movie(
   episode_released episode,
   droids list<frozen<starwars.droid>>,
   humans list<frozen<starwars.human>>,
+  comment text,
   primary key (id, year_released)
 ) with clustering order by (year_released desc);
-
-

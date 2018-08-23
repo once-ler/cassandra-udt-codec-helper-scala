@@ -136,47 +136,25 @@ class TestCassandraUdtCodecHelperSpec extends FunSpec with Matchers with BeforeA
     }
 
     it("Should construct cql script to create the UDT or table for testing") {
-      import scala.reflect.runtime.universe._
-
       import com.eztier.cassandra.CaCommon._
 
-      val m = toCaTypeTest[BClass]
-      m.map {
-        symbol =>
-          val n = symbol.name
-          val t = symbol.info.resultType
-          val v = t.typeArgs
-
-          val m = t match {
-            case a if t <:< typeOf[SomeTrait] => t.typeSymbol.name
-            case a if t <:< typeOf[Seq[SomeTrait]] => s"list<${v(0).typeSymbol.name}>"
-            case _ => "Don't know"
-          }
-      }
-
-      val n = toCaType[Movie]
-
-      for (z <- n) {
-        println(s"${z._1}: ${z._2}")
-      }
-
-      println("done")
-    }
-
-    it("Should construct cql script to create the UDT or table for testing 2") {
-      import com.eztier.cassandra.CaCommon._
+      val fixtures = ConfigFactory.load("fixtures")
+      val fxCreateDroid = fixtures.getString("spec-test.create-stmt-droid")
+      val fxCreateMovie = fixtures.getString("spec-test.create-stmt-movie-default")
+      val fxCreateMovieCustom = fixtures.getString("spec-test.create-stmt-movie-custom")
 
       val s = getCreateStmt[Droid]
 
-      println(s)
+      s should be (fxCreateDroid)
 
       val m = getCreateStmt[Movie]
 
-      println(m)
+      m should be (fxCreateMovie)
 
       val m2 = getCreateStmt[Movie]("Id")("YearReleased")(Some("YearReleased"), Some(-1))
 
-      println(m2)
+      m2 should be (fxCreateMovieCustom)
+
     }
 
   }
