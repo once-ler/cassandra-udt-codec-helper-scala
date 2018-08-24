@@ -56,9 +56,9 @@ class TestCassandraUdtCodecHelperSpec extends FunSpec with Matchers with BeforeA
     val threepio = Droid(threepioC, Seq(lukeC, hanC, leiaC, artooC), "Protocol")
     val artoo = Droid(artooC, Seq(lukeC, hanC, leiaC), "Astromech")
 
-    movies += Movie("4", 1977, newHope, Seq(threepio, artoo), Seq(luke, han, leia, vader, tarkin))
-    movies += Movie("5", 1980, empire, Seq(threepio, artoo), Seq(luke, han, leia, vader))
-    movies += Movie("6", 1983, jedi, Seq(threepio, artoo), Seq(luke, han, leia, vader))
+    movies += Movie("4", 1977, newHope, Seq(threepio, artoo), Seq(luke, han, leia, vader, tarkin), "Good")
+    movies += Movie("5", 1980, empire, Seq(threepio, artoo), Seq(luke, han, leia, vader), "Great")
+    movies += Movie("6", 1983, jedi, Seq(threepio, artoo), Seq(luke, han, leia, vader), "Alright")
 
     provider.register[Episode]
       .register[Character]
