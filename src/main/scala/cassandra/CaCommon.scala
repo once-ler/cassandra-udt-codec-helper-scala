@@ -88,7 +88,7 @@ object CaCommon {
     m
   }
 
-  def getCreateStmt[T](implicit typeTag: TypeTag[T]): String = {
+  def getCreateStmt[T](implicit typeTag: TypeTag[T]): Seq[String] = {
     val o = typeTag.tpe.resultType
 
     val objectType = o match {
@@ -104,12 +104,12 @@ object CaCommon {
         a
     }
 
-    s"create ${objectType} if not exists ${camelToUnderscores(o.typeSymbol.name.toString)} (${f.mkString(",")});"
+    Seq(s"create ${objectType} if not exists ${camelToUnderscores(o.typeSymbol.name.toString)} (${f.mkString(",")});")
   }
 
-  def getCreateStmt[T: TypeTag](partitionKeys: String*)(clusteringKeys: String*)(orderBy: Option[String] = None, direction: Option[Int] = None): String = {
+  def getCreateStmt[T: TypeTag](partitionKeys: String*)(clusteringKeys: String*)(orderBy: Option[String] = None, direction: Option[Int] = None): Seq[String] = {
 
-    val t: String = getCreateStmt[T]
+    val t: Seq[String] = getCreateStmt[T]
 
     val o = typeTag.tpe.resultType
     val n = camelToUnderscores(o.typeSymbol.name.toString)
@@ -134,7 +134,7 @@ object CaCommon {
               case None => "asc"
             }
 
-            s" with clustering order by ${camelToUnderscores(a)} ${sort}"
+            s" with clustering order by (${camelToUnderscores(a)} ${sort})"
           case None => ""
         }
 
@@ -144,15 +144,19 @@ object CaCommon {
         }.map {
           a =>
             val c = camelToUnderscores(a)
-            s"create custom index on ${n}(${c}) using 'org.apache.cassandra.index.sasi.SASIIndex' with options = {'mode': 'CONTAINS', 'analyzer_class': 'org.apache.cassandra.index.sasi.analyzer.NonTokenizingAnalyzer', 'case_sensitive': 'false'};"
+            s"create custom index if not exists ${n}_${c}_idx on ${n}(${c}) using 'org.apache.cassandra.index.sasi.SASIIndex' with options = {'mode': 'CONTAINS', 'analyzer_class': 'org.apache.cassandra.index.sasi.analyzer.NonTokenizingAnalyzer', 'case_sensitive': 'false'};"
         }.mkString("\n")
 
-        val trim = t.substring(0, t.length - 2)
-        trim +
-          s", primary key ((${pk})" +
-          (if (ck.length > 0) s", ${ck})" else ")") +
-          sb + ";\n" +
-          idx
+        val t0 = t(0)
+        val trim = t0.substring(0, t0.length - 2)
+
+        {
+          trim +
+            s", primary key ((${pk})" +
+            (if (ck.length > 0) s", ${ck}))" else "))") +
+            sb + ";\n" +
+            idx
+        }.split('\n')
 
       case _ => t // Just return type creation script b/c there's no primary keys.
     }

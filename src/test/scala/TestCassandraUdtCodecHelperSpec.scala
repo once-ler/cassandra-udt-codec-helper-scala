@@ -1,10 +1,12 @@
 package com.eztier.test
 
+import java.nio.ByteBuffer
+
 import org.scalatest.{BeforeAndAfter, Failed, FunSpec, Matchers}
 
 import scala.collection.mutable.ListBuffer
 import StarWarsTypes._
-import com.datastax.driver.core.ResultSet
+import com.datastax.driver.core._
 import com.datastax.driver.core.querybuilder.QueryBuilder
 import com.eztier.cassandra.CaCommon.camelToUnderscores
 import com.typesafe.config.{Config, ConfigFactory}
@@ -60,15 +62,16 @@ class TestCassandraUdtCodecHelperSpec extends FunSpec with Matchers with BeforeA
     movies += Movie("5", 1980, empire, Seq(threepio, artoo), Seq(luke, han, leia, vader), "Great")
     movies += Movie("6", 1983, jedi, Seq(threepio, artoo), Seq(luke, han, leia, vader), "Alright")
 
-    provider.register[Episode]
-      .register[Character]
-      .register[Droid]
-      .register[Human]
   }
 
   describe("Cassandra Udt Codec Helper Suite") {
 
     it("Should infer insert statement with UDT's defined by the user.") {
+
+      provider.register[Episode]
+        .register[Character]
+        .register[Droid]
+        .register[Human]
 
       val f = Source(movies.toList)
         .map{ _.getInsertStatement("starwars") }
@@ -88,6 +91,11 @@ class TestCassandraUdtCodecHelperSpec extends FunSpec with Matchers with BeforeA
     }
 
     it("Should fetch inserted row corrected and unmarshall UDT to scala types.") {
+
+      provider.register[Episode]
+        .register[Character]
+        .register[Droid]
+        .register[Human]
 
       // Implicitly convert row to Movie type.
       import StarWarsImplicits._
@@ -142,19 +150,50 @@ class TestCassandraUdtCodecHelperSpec extends FunSpec with Matchers with BeforeA
       val fxCreateDroid = fixtures.getString("spec-test.create-stmt-droid")
       val fxCreateMovie = fixtures.getString("spec-test.create-stmt-movie-default")
       val fxCreateMovieCustom = fixtures.getString("spec-test.create-stmt-movie-custom")
+      val fxCreateMovieCustomIndex = fixtures.getString("spec-test.create-stmt-movie-custom-index")
 
       val s = getCreateStmt[Droid]
 
-      s should be (fxCreateDroid)
+      s(0) should be (fxCreateDroid)
 
       val m = getCreateStmt[Movie]
 
-      m should be (fxCreateMovie)
+      m(0) should be (fxCreateMovie)
 
       val m2 = getCreateStmt[Movie]("Id")("YearReleased")(Some("YearReleased"), Some(-1))
 
-      m2 should be (fxCreateMovieCustom)
+      m2(0) should be (fxCreateMovieCustom)
+      m2(1) should be (fxCreateMovieCustomIndex)
 
+    }
+
+    it("Should create table if necessary") {
+      import com.eztier.cassandra.CaCommon._
+
+      // Must drop movie first b/c it is using type droid.
+      val dropList = List(
+        "drop table if exists movie;",
+        "drop type if exists droid;"
+      )
+
+      val droidCreateList = getCreateStmt[Droid]
+      val movieCreateList = getCreateStmt[Movie]("Id")("YearReleased")(Some("YearReleased"), Some(-1))
+
+      val l = dropList ++ droidCreateList ++ movieCreateList
+
+      val fu = Source(l)
+        .mapAsync(1) {
+          cql => provider.readAsync(new SimpleStatement(cql))
+        }
+        .runWith(Sink.seq)
+        .map(Right.apply _)
+        .recover {
+          case e: Exception => Left(e)
+        }
+
+      val r = Await.result(fu, 10 seconds)
+
+      r should be ('right)
     }
 
   }
