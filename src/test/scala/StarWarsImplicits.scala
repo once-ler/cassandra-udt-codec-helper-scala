@@ -14,7 +14,7 @@ object StarWarsImplicits {
   implicit def rowToMovie(row: Row) =
     Movie(
       Id = row.getString(camelToUnderscores("Id")),
-      YearReleased = row.getShort(camelToUnderscores("YearReleased")),
+      YearReleased = row.getInt(camelToUnderscores("YearReleased")),
       EpisodeReleased = row.get(camelToUnderscores("EpisodeReleased"), classOf[Episode]),
       Droids = row.getList(camelToUnderscores("Droids"), classOf[Droid]).asScala,
       Humans = row.getList(camelToUnderscores("Humans"), classOf[Human]).asScala
