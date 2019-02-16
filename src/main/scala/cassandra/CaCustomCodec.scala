@@ -12,6 +12,7 @@ import com.google.common.reflect.TypeToken
 import com.google.common.util.concurrent.FutureCallback
 import com.google.common.util.concurrent.Futures
 import com.eztier.cassandra.CaCommon.{camelToUnderscores, getFieldNames}
+import com.typesafe.config.Config
 
 import scala.collection.JavaConverters._
 
@@ -91,10 +92,8 @@ case class CaCustomCodecProvider(endpoints: java.util.Collection[InetAddress], k
 
 // Note: must match datastax configuration
 object CaCustomCodecProvider {
-  def apply(path: String) = {
-    import com.typesafe.config._
-    val conf = ConfigFactory.load()
 
+  private def parseConfiguration(conf: Config, path: String) = {
     if (!conf.hasPath(path))
       throw new IllegalArgumentException(s"No configuration setting found for path $path")
 
@@ -125,6 +124,17 @@ object CaCustomCodecProvider {
 
     new CaCustomCodecProvider(contactPoints.asJavaCollection, keySpace, cred(0), cred(1), port)
   }
+
+  def apply(path: String) = {
+    import com.typesafe.config._
+    val conf = ConfigFactory.load()
+
+    parseConfiguration(conf, path)
+  }
+
+  def apply(conf: Config) = (path: String) =>
+    parseConfiguration(conf, path)
+
 }
 
 /*

@@ -65,6 +65,14 @@ class TestCassandraUdtCodecHelperSpec extends FunSpec with Matchers with BeforeA
   }
 
   describe("Cassandra Udt Codec Helper Suite") {
+    it("User can pass Config object to the Udt Helper") {
+      import com.typesafe.config._
+      val conf = ConfigFactory.load()
+
+      val provider2 = CaCustomCodecProvider(conf)("development.cassandra")
+
+      provider2.session.isClosed should be (false)
+    }
 
     it("Should infer insert statement with UDT's defined by the user.") {
 

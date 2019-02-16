@@ -14,7 +14,7 @@ lazy val compilerOptions = Seq(
 )
 
 lazy val commonSettings = Seq(
-  version := "0.2.19",
+  version := "0.2.20",
   organization := "com.eztier",
   name := "cassandra-udt-codec-helper-scala",
   scalaVersion := "2.12.4",
@@ -104,7 +104,7 @@ releaseProcess := Seq[ReleaseStep](
   runClean,
   runTest,
   setReleaseVersion,
-  // commitReleaseVersion,
+  commitReleaseVersion,
   tagRelease,
   // releaseStepCommand("publishSigned"),
   // publishArtifacts,

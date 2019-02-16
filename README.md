@@ -3,5 +3,5 @@
 ### Installation
 
 ```
-libraryDependencies += "com.eztier" %% "cassandra-udt-codec-helper-scala" % "0.2.19"
+libraryDependencies += "com.eztier" %% "cassandra-udt-codec-helper-scala" % "0.2.20"
 ```
