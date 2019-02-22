@@ -2,6 +2,7 @@ package com.eztier.cassandra
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.alpakka.cassandra.CassandraBatchSettings
 import akka.stream.alpakka.cassandra.scaladsl.{CassandraFlow, CassandraSink, CassandraSource}
 import com.datastax.driver.core.{BoundStatement, PreparedStatement, Session, SimpleStatement}
 
@@ -19,6 +20,10 @@ trait CaStreamFlowTask {
 
   def getInsertFlow[T](preparedStatement: PreparedStatement, statementBinder: (T, PreparedStatement) => BoundStatement) = {
     CassandraFlow.createWithPassThrough(parallelism = 2, preparedStatement, statementBinder)
+  }
+
+  def getBatchInsertFlow[T, K](preparedStatement: PreparedStatement, statementBinder: (T, PreparedStatement) => BoundStatement, partitionKey: T => K) = {
+    CassandraFlow.createUnloggedBatchWithPassThrough(parallelism = 4, preparedStatement, statementBinder, partitionKey)
   }
 
   def getInsertSink[T](preparedStatement: PreparedStatement, statementBinder: (T, PreparedStatement) => BoundStatement) = {
