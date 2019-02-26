@@ -171,7 +171,7 @@ class TestCassandraUdtCodecHelperSpec extends FunSpec with Matchers with BeforeA
       val m2 = getCreateStmt[Movie]("Id")("YearReleased")(Some("YearReleased"), Some(-1))
 
       m2(0) should be (fxCreateMovieCustom)
-      m2(1) should be (fxCreateMovieCustomIndex)
+      // m2(1) should be (fxCreateMovieCustomIndex) // Removed as of 0.2.21
 
     }
 
