@@ -138,15 +138,6 @@ object CaCommon {
           case None => ""
         }
 
-        // Create non-primary key text indexes
-        val idx = members.collect {
-          case a if a.info.resultType == typeOf[String] && partitionKeys.find(_ == a.name.toString) == None && clusteringKeys.find(_ == a.name.toString) == None => a.name.toString
-        }.map {
-          a =>
-            val c = camelToUnderscores(a)
-            s"create custom index if not exists ${n}_${c}_idx on ${n}(${c}) using 'org.apache.cassandra.index.sasi.SASIIndex' with options = {'mode': 'CONTAINS', 'analyzer_class': 'org.apache.cassandra.index.sasi.analyzer.NonTokenizingAnalyzer', 'case_sensitive': 'false'};"
-        }.mkString("\n")
-
         val t0 = t(0)
         val trim = t0.substring(0, t0.length - 2)
 
@@ -154,8 +145,7 @@ object CaCommon {
           trim +
             s", primary key ((${pk})" +
             (if (ck.length > 0) s", ${ck}))" else "))") +
-            sb + ";\n" +
-            idx
+            sb + ";\n"
         }.split('\n')
 
       case _ => t // Just return type creation script b/c there's no primary keys.

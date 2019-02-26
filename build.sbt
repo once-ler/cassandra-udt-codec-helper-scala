@@ -14,7 +14,7 @@ lazy val compilerOptions = Seq(
 )
 
 lazy val commonSettings = Seq(
-  version := "0.2.20",
+  version := "0.2.21",
   organization := "com.eztier",
   name := "cassandra-udt-codec-helper-scala",
   scalaVersion := "2.12.4",
